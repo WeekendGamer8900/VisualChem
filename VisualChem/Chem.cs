@@ -106,7 +106,7 @@ namespace VisualChem
             non = 9,
             dec = 10,
             undec = 11,
-            dodec = 12
+            dodec = 12,
             tridec = 13,
             tetradec = 14,
             pentadec = 15,
@@ -241,10 +241,32 @@ namespace VisualChem
                 return ret;
             }
 
-            public Molecule GetMolecule(TokenizedExpression exp)
+            public Molecule GetRawMolecule(TokenizedExpression exp)
             {
+                //Make parent chain
                 List<Node> parentChain = new List<Node>();
+                List<Bond> parentChainBonds = new List<Bond>();
+                for (int i = 0; i < (int)exp.ParentChainTokens[0].Type; i++)
+                {
+                    Node tmp = new Node(NodeType.Carbon);
+                    Nodes.Add(tmp);
+                    parentChain.Add(tmp);
+                }
+                for (int i = 0; i < parentChain.Count-1; i++)
+                {
+                    Bond tmp = new Bond(parentChain[i], parentChain[i + 1]);
+                    parentChainBonds.Add(tmp);
+                    Bonds.Add(tmp);
+                }
 
+                //make bonds
+
+            }
+
+            public Molecule FixMolecule()
+            {
+                throw new NotImplementedException();
+                return this;
             }
 
             public void InitFromName(string name)
@@ -285,6 +307,12 @@ namespace VisualChem
             public Node Node2;
             public Orientation Orienation = Orientation.None;
 
+            public Bond(Node thisNode,Node thatNode)
+            {
+                Node1 = thisNode;
+                Node2 = thatNode;
+            }
+
             public Node GetOther(Node thisNode)
             {
                 if (thisNode == Node1) return Node2;
@@ -307,6 +335,10 @@ namespace VisualChem
         {
             public NodeType Type;
 
+            public Node(NodeType t)
+            {
+                Type = t;
+            }
         }
     }
 }
