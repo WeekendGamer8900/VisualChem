@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VisualChem
+namespace VisualChem.Chem
 {
     using System.ComponentModel;
     using System.Text.RegularExpressions;
     using static Helper;
-    class Chem
+    class Structure
     {
         static Dictionary<string, Operators> dictOperators =
             Enum.GetValues(typeof(Operators)).Cast<Operators>().ToDictionary((op) => op.ToDString());
@@ -26,16 +26,16 @@ namespace VisualChem
         static Dictionary<string, Suffixes> dictSuffixes =
             Enum.GetValues(typeof(Suffixes)).Cast<Suffixes>().ToDictionary((op) => op.ToDString());
 
-        static Dictionary<string,object> dictAllFunctionalGps =
+        static Dictionary<string, object> dictAllFunctionalGps =
         dictOperators.ToDictionary(p => p.Key, p => (object)p.Value)
         .Union(dictVowels.ToDictionary(p => p.Key, p => (object)p.Value))
         .Union(dictEngPrefixes.ToDictionary(p => p.Key, p => (object)p.Value))
         .Union(dictChemPrefixes.ToDictionary(p => p.Key, p => (object)p.Value))
-        .Union(dictFunctionalGps.ToDictionary(p => p.Key, p => (object)p.Value)).ToDictionary(s => s.Key,s => s.Value);
+        .Union(dictFunctionalGps.ToDictionary(p => p.Key, p => (object)p.Value)).ToDictionary(s => s.Key, s => s.Value);
 
         static Dictionary<string, object> dictAllParentChain =
         dictChemPrefixes.ToDictionary(p => p.Key, p => (object)p.Value).ToDictionary(s => s.Key, s => s.Value);
-        
+
         static Dictionary<string, object> dictAllTail =
         dictOperators.ToDictionary(p => p.Key, p => (object)p.Value)
         .Union(dictVowels.ToDictionary(p => p.Key, p => (object)p.Value))
@@ -169,7 +169,7 @@ namespace VisualChem
 
             List<string> FindStringTokens(string name, List<string> refTokens)
             {
-                if (name.Length == 0)
+                if (String.IsNullOrWhiteSpace(name))
                 {
                     return new List<string>();
                 }
@@ -248,50 +248,60 @@ namespace VisualChem
                 List<Bond> parentChainBonds = new List<Bond>();
                 for (int i = 0; i < (int)exp.ParentChainTokens[0].Type; i++)
                 {
-                    Node tmp = new Node(NodeType.Carbon);
+                    Node tmp = new Node(Elements.Carbon);
                     Nodes.Add(tmp);
                     parentChain.Add(tmp);
                 }
-                for (int i = 0; i < parentChain.Count-1; i++)
+                for (int i = 0; i < parentChain.Count - 1; i++)
                 {
-                    Bond tmp = new Bond(parentChain[i], parentChain[i + 1]);
+                    Bond tmp = new Bond(parentChain[i], parentChain[i + 1], BondType.Single, Orientation.Horizontal);
                     parentChainBonds.Add(tmp);
                     Bonds.Add(tmp);
                 }
 
                 //make bonds
-
-            }
-
-            public Molecule FixMolecule()
-            {
-                throw new NotImplementedException();
                 return this;
             }
 
-            public void InitFromName(string name)
+            //Add hydrogen to all atoms that is not saturated
+            public Molecule FixMolecule()
             {
-
+                for (int i = 0; i < Nodes.Count; i++)
+                {
+                    Node n = Nodes[i];
+                    int remain = GetBondCount(n.Type) - GetOther(n).Count;
+                    for (int j = 0; j < remain; j++)
+                    {
+                        Node h = new Node(Elements.Hydrogen);
+                        Bond b = new Bond(n, h, BondType.Single, Orientation.None);
+                        Bonds.Add(b);
+                        Nodes.Add(h);
+                    }
+                }
+                return this;
             }
 
-            public List<Node> GetOther(Node thisNode)
+            public void FromName(string name)
             {
-                List<Node> ret = new List<Node>();
+                StringExpression exp = Lexer(name);
+                TokenizedExpression texp = Tokenize(exp);
+                GetRawMolecule(texp);
+                FixMolecule();
+            }
+
+            public List<Bond> GetOther(Node thisNode)
+            {
+                List<Bond> ret = new List<Bond>();
                 foreach (Bond b in Bonds)
                 {
                     Node n = b.GetOther(thisNode);
-                    if (n != null) ret.Add(n);
+                    if (n != null) ret.Add(b);
                 }
                 return ret;
             }
         }
 
-        public enum BondType
-        {
-            Single,
-            Double,
-            Triple
-        }
+        
 
         public enum Orientation
         {
@@ -305,12 +315,14 @@ namespace VisualChem
             public BondType Type;
             public Node Node1;
             public Node Node2;
-            public Orientation Orienation = Orientation.None;
+            public Orientation Orientation = Orientation.None;
 
-            public Bond(Node thisNode,Node thatNode)
+            public Bond(Node thisNode, Node thatNode, BondType t, Orientation o)
             {
                 Node1 = thisNode;
                 Node2 = thatNode;
+                Type = t;
+                Orientation = o;
             }
 
             public Node GetOther(Node thisNode)
@@ -321,24 +333,56 @@ namespace VisualChem
             }
         }
 
-        public enum NodeType
-        {
-            Carbon,
-            Hydrogen,
-            Oxygen,
-            Chlorine,
-            Bromine,
-            Nitrogen
-        }
-
         public class Node
         {
-            public NodeType Type;
+            public Elements Type;
 
-            public Node(NodeType t)
+            public Node(Elements t)
             {
                 Type = t;
             }
         }
+
+        public static int GetBondCount(Elements type)
+        {
+            switch (type)
+            {
+                case Elements.Carbon:
+                    return 4;
+                case Elements.Bromine:
+                case Elements.Chlorine:
+                case Elements.Hydrogen:
+                    return 1;
+                case Elements.Nitrogen:
+                    return 3;
+                case Elements.Oxygen:
+                    return 2;
+                default:
+                    return 0;
+            }
+        }
+    }
+
+    public enum BondType
+    {
+        Single = 1,
+        Double = 2,
+        Triple = 3
+    }
+
+    public enum Elements
+    {
+        [Description("C")]
+        Carbon,
+        [Description("H")]
+        Hydrogen,
+        [Description("O")]
+        Oxygen,
+        [Description("Cl")]
+        Chlorine,
+        [Description("Br")]
+        Bromine,
+        [Description("N")]
+        Nitrogen
     }
 }
