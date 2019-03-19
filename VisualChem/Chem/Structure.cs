@@ -272,8 +272,10 @@ namespace VisualChem.Chem
                     Token t = exp.TailTokens[i];
                     if (mode == 0)
                     {
-                        if (t.Type is Operators op)
+                        Operators op;
+                        if (t.Type is Operators)
                         {
+                            op = (Operators)t.Type;
                             if (op == Operators.number)
                             {
                                 numbers.Add(t.data);
@@ -294,16 +296,20 @@ namespace VisualChem.Chem
                     }
                     else if (mode == 1)
                     {
-                        if (t.Type is Operators op)
+                        EngPrefixes engPrefix;
+                        Bonds btype;
+                        if (t.Type is Operators)
                         {
                             throw new FormatException("Wrong token format at token #" + i);
                         }
-                        else if (t.Type is EngPrefixes engPrefix)
+                        else if (t.Type is EngPrefixes)
                         {
+                            engPrefix = (EngPrefixes)t.Type;
                             //TODO: check prefix validity
                         }
-                        else if (t.Type is Bonds btype)
+                        else if (t.Type is Bonds)
                         {
+                            btype = (Bonds)t.Type;
                             foreach (int k in numbers)
                             {
                                 parentChainBonds[k - 1].Type = (BondType)(int)btype;
@@ -312,8 +318,10 @@ namespace VisualChem.Chem
                             mode = 0;
                             if (i < exp.TailTokens.Count - 1)
                             {
-                                if (exp.TailTokens[i + 1].Type is Operators nextOp)
+                                Operators nextOp;
+                                if (exp.TailTokens[i + 1].Type is Operators)
                                 {
+                                    nextOp = (Operators)exp.TailTokens[i + 1].Type;
                                     if (nextOp == Operators.hyphen) i++;
                                 }
                             }
