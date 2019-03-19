@@ -246,6 +246,19 @@ namespace VisualChem.Chem
                 return ret;
             }
 
+            void CarboxylicAcid(Node carbon)
+            {
+                Node nodeO1 = new Node(Elements.Oxygen);
+                Node nodeO2 = new Node(Elements.Oxygen);
+                Node nodeH = new Node(Elements.Hydrogen);
+                Nodes.Add(nodeO1);
+                Nodes.Add(nodeO2);
+                Nodes.Add(nodeH);
+                Bonds.Add(new Bond(carbon, nodeO2, BondType.Single, Orientation.Horizontal));
+                Bonds.Add(new Bond(carbon, nodeO1, BondType.Double, Orientation.Vertical));
+                Bonds.Add(new Bond(nodeO2, nodeH, BondType.Single, Orientation.Horizontal));
+            }
+
             public Molecule GetRawMolecule(TokenizedExpression exp)
             {
                 //Make parent chain
@@ -267,12 +280,15 @@ namespace VisualChem.Chem
                 //make bonds
                 int mode = 0;
                 List<int> numbers = new List<int>();
+                int engPreNum = 0;
                 for (int i = 0; i < exp.TailTokens.Count; i++)
                 {
                     Token t = exp.TailTokens[i];
                     if (mode == 0)
                     {
                         Operators op;
+                        Suffixes suffix;
+                        EngPrefixes engPre;
                         if (t.Type is Operators)
                         {
                             op = (Operators)t.Type;
@@ -288,6 +304,24 @@ namespace VisualChem.Chem
                             {
                                 mode = 1;
                             }
+                        }
+                        else if (t.Type is EngPrefixes)
+                        {
+                            engPre = (EngPrefixes)t.Type;
+                            engPreNum = (int)engPre;
+                        }
+                        else if (t.Type is Suffixes)
+                        {
+                            suffix = (Suffixes)t.Type;
+                            if (suffix == Suffixes.oic_acid)
+                            {
+                                CarboxylicAcid(parentChain[0]);
+                                if (engPreNum == 2)
+                                    CarboxylicAcid(parentChain.Last());
+                            }
+                            numbers.Clear();
+                            engPreNum = 0;
+                            mode = 0;
                         }
                         else
                         {
@@ -315,6 +349,7 @@ namespace VisualChem.Chem
                                 parentChainBonds[k - 1].Type = (BondType)(int)btype;
                             }
                             numbers.Clear();
+                            engPreNum = 0;
                             mode = 0;
                             if (i < exp.TailTokens.Count - 1)
                             {

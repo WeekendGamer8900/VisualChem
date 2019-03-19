@@ -106,7 +106,7 @@ namespace VisualChem.Chem
                     verticals = verticals.Take(verticalCnt).ToList();
                 }
                 connections = connections.Except(verticals).ToList();
-                dir = 1;
+                dir = -1;
                 foreach (Structure.Bond bd in verticals)
                 {
                     if (!availableDirs.Contains(PointToNum(0, dir))) dir *= -1;
