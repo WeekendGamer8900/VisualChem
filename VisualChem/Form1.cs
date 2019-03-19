@@ -29,8 +29,9 @@ namespace VisualChem
         {
             if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Return)
             {
-                thisMol = new Structure.Molecule();
                 string tmp = txtName.Text;
+                thisMol = new Structure.Molecule();
+                /*
                 Structure.StringExpression l = thisMol.Lexer(tmp);
                 if (l.FunctionalGpTokens != null && l.ParentChainTokens != null && l.TailTokens != null)
                     txtName.Text = (l.FunctionalGpTokens.Count > 0 ? l.FunctionalGpTokens.Aggregate((a, b) => a + " " + b) : "") + " | " +
@@ -43,25 +44,11 @@ namespace VisualChem
                 tl.ParentChainTokens.ForEach((t) => txtName.Text += t.Type.ToString() + " ");
                 txtName.Text += "| ";
                 tl.TailTokens.ForEach((t) => txtName.Text += t.Type.ToString() + " ");
+                */
                 thisMol.FromName(tmp);
                 Rendering.Graph graph = new Rendering.Graph();
                 graph.FromStructure(thisMol);
-                Bitmap bmp = new Bitmap(imgOut.Width, imgOut.Height);
-                Graphics g = Graphics.FromImage(bmp);
-                g.TranslateTransform(imgOut.Width / 2, imgOut.Height / 2);
-                foreach (Rendering.Node n in graph.Nodes)
-                {
-                    g.DrawString(n.Type.ToDString(), Font, Brushes.Black, n.Location.X * 30, n.Location.Y * 30, new StringFormat() { LineAlignment = StringAlignment.Center, Alignment = StringAlignment.Center });
-                }
-                foreach (Rendering.Bond b in graph.Bonds)
-                {
-                    g.DrawLine(Pens.Black,
-                        Math.Sign(b.Node2.Location.X - b.Node1.Location.X) * 7 + b.Node1.Location.X * 30,
-                        Math.Sign(b.Node2.Location.Y - b.Node1.Location.Y) * 7 + b.Node1.Location.Y * 30,
-                        Math.Sign(b.Node1.Location.X - b.Node2.Location.X) * 7 + b.Node2.Location.X * 30,
-                        Math.Sign(b.Node1.Location.Y - b.Node2.Location.Y) * 7 + b.Node2.Location.Y * 30);
-                }
-                imgOut.Image = bmp;
+                imgOut.Image = graph.GetImage(imgOut.Width, imgOut.Height, Font, 0, 0, 1.5f);
                 imgOut.Refresh();
                 Console.WriteLine("");
             }

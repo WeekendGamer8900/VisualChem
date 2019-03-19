@@ -14,7 +14,7 @@ namespace VisualChem.Chem
             public List<Node> Nodes = new List<Node>();
             public List<Bond> Bonds = new List<Bond>();
 
-            int PointToNum(int dx,int dy)
+            int PointToNum(int dx, int dy)
             {
                 if (dx == 0)
                 {
@@ -72,7 +72,7 @@ namespace VisualChem.Chem
                     return;
                 }
 
-                List<int> availableDirs = new int[] { 1, 2, 3, 4 }.ToList();
+                List<int> availableDirs = new int[] { 1, 3, 4, 2 }.ToList();
                 if (lastBond != null)
                 {
                     availableDirs.Remove(PointToNum(lastBond.GetOther(baseNode).Location.X - baseNode.Location.X, lastBond.GetOther(baseNode).Location.Y - baseNode.Location.Y));
@@ -118,7 +118,7 @@ namespace VisualChem.Chem
                     Bonds.Add(tmpbd);
                     DrawGraph(molecule, tmpbd, bd, tmpNd, bd.GetOther(info));
                 }
-                
+
                 foreach (Structure.Bond bd in connections)
                 {
                     Point offset = NumToPoint(availableDirs[0]);
@@ -129,6 +129,69 @@ namespace VisualChem.Chem
                     DrawGraph(molecule, tmpbd, bd, tmpNd, bd.GetOther(info));
                     availableDirs.RemoveAt(0);
                 }
+            }
+
+            public Bitmap GetImage(int width, int height, Font font, float offsetX, float offsetY, float scale)
+            {
+                Bitmap bmp = new Bitmap(width, height);
+                Graphics g = Graphics.FromImage(bmp);
+                int minX = 0, minY = 0, maxX = 0, maxY = 0;
+                foreach (Rendering.Node n in Nodes)
+                {
+                    minX = Math.Min(minX, n.Location.X);
+                    minY = Math.Min(minY, n.Location.Y);
+                    maxX = Math.Max(maxX, n.Location.X);
+                    maxY = Math.Max(maxY, n.Location.Y);
+                }
+                g.TranslateTransform(width / 2 + offsetX - (minX + maxX) * 30 * scale / 2, height / 2 + offsetY - (minY + maxY) * 30 * scale / 2);
+                foreach (Rendering.Node n in Nodes)
+                {
+                    g.DrawString(n.Type.ToDString(), font, Brushes.Black, n.Location.X * 30 * scale, n.Location.Y * 30 * scale, new StringFormat() { LineAlignment = StringAlignment.Center, Alignment = StringAlignment.Center });
+                }
+                foreach (Rendering.Bond b in Bonds)
+                {
+                    PointF Dir21 = b.Node2.Location.F().Minus(b.Node1.Location).Normalize();
+                    PointF gap = Dir21.Scale(10 * scale);
+                    if (b.Type == BondType.Single || b.Type == BondType.Triple)
+                    {
+                        g.DrawLine(Pens.Black,
+                            gap.X + b.Node1.Location.X * 30 * scale,
+                            gap.Y + b.Node1.Location.Y * 30 * scale,
+                            -gap.X + b.Node2.Location.X * 30 * scale,
+                            -gap.Y + b.Node2.Location.Y * 30 * scale);
+                    }
+                    if (b.Type == BondType.Triple)
+                    {
+                        double angle = Math.Atan2(Dir21.Y, Dir21.X);
+                        PointF lateral = new PointF((float)Math.Cos(angle + Math.PI / 2), (float)Math.Sin(angle + Math.PI / 2)).Scale(2 * scale);
+                        g.DrawLine(Pens.Black,
+                            lateral.X + gap.X + b.Node1.Location.X * 30 * scale,
+                            lateral.Y + gap.Y + b.Node1.Location.Y * 30 * scale,
+                            lateral.X - gap.X + b.Node2.Location.X * 30 * scale,
+                            lateral.Y - gap.Y + b.Node2.Location.Y * 30 * scale);
+                        g.DrawLine(Pens.Black,
+                            -lateral.X + gap.X + b.Node1.Location.X * 30 * scale,
+                            -lateral.Y + gap.Y + b.Node1.Location.Y * 30 * scale,
+                            -lateral.X - gap.X + b.Node2.Location.X * 30 * scale,
+                            -lateral.Y - gap.Y + b.Node2.Location.Y * 30 * scale);
+                    }
+                    if (b.Type == BondType.Double)
+                    {
+                        double angle = Math.Atan2(Dir21.Y, Dir21.X);
+                        PointF lateral = new PointF((float)Math.Cos(angle + Math.PI / 2), (float)Math.Sin(angle + Math.PI / 2)).Scale(scale);
+                        g.DrawLine(Pens.Black,
+                            lateral.X + gap.X + b.Node1.Location.X * 30 * scale,
+                            lateral.Y + gap.Y + b.Node1.Location.Y * 30 * scale,
+                            lateral.X - gap.X + b.Node2.Location.X * 30 * scale,
+                            lateral.Y - gap.Y + b.Node2.Location.Y * 30 * scale);
+                        g.DrawLine(Pens.Black,
+                            -lateral.X + gap.X + b.Node1.Location.X * 30 * scale,
+                            -lateral.Y + gap.Y + b.Node1.Location.Y * 30 * scale,
+                            -lateral.X - gap.X + b.Node2.Location.X * 30 * scale,
+                            -lateral.Y - gap.Y + b.Node2.Location.Y * 30 * scale);
+                    }
+                }
+                return bmp;
             }
 
             public Graph FromStructure(Structure.Molecule molecule)
@@ -160,7 +223,7 @@ namespace VisualChem.Chem
         {
             public Point Location;
             public Elements Type;
-            public Node(Elements t,Point loc = default(Point))
+            public Node(Elements t, Point loc = default(Point))
             {
                 Type = t;
                 Location = loc;

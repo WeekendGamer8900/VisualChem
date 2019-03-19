@@ -90,8 +90,13 @@ namespace VisualChem.Chem
 
         public enum EngPrefixes
         {
-            di,
-            tri,
+            di = 2,
+            tri = 3,
+            tetra = 4,
+            penta = 5,
+            hexa = 6,
+            hepta = 7,
+            octa = 8,
         }
         public enum ChemPrefixes
         {
@@ -122,7 +127,7 @@ namespace VisualChem.Chem
         }
         public enum Bonds
         {
-            an, en, yn
+            an = 1, en = 2, yn = 3
         }
         public enum Suffixes
         {
@@ -202,7 +207,7 @@ namespace VisualChem.Chem
             public StringExpression Lexer(string name)
             {
                 StringExpression exp = new StringExpression();
-                Match m = Regex.Match(name, "^([a-z\\-,0-9()]*)(?:((?:^|(?<=[a-z)]))(?:" + Enum.GetValues(typeof(ChemPrefixes)).Cast<ChemPrefixes>().Select((op) => op.ToDString()).Aggregate((a, b) => a + "|" + b) + ")(?!yl|oxy))([a-z\\-,0-9 ]*))$");
+                Match m = Regex.Match(name, "^([a-z\\-,0-9()]*?)(?:((?:^|(?<=[a-z)]))(?:" + Enum.GetValues(typeof(ChemPrefixes)).Cast<ChemPrefixes>().Select((op) => op.ToDString()).Aggregate((a, b) => a + "|" + b) + ")(?!yl|oxy))([a-z\\-,0-9 ]*?))$");
                 exp.FunctionalGpTokens = FindStringTokens(m.Groups[1].Value, functionalGpsTokens);
                 exp.ParentChainTokens = FindStringTokens(m.Groups[2].Value, parentChainTokens);
                 exp.TailTokens = FindStringTokens(m.Groups[3].Value, tailTokens);
@@ -260,6 +265,61 @@ namespace VisualChem.Chem
                 }
 
                 //make bonds
+                int mode = 0;
+                List<int> numbers = new List<int>();
+                for (int i = 0; i < exp.TailTokens.Count; i++)
+                {
+                    Token t = exp.TailTokens[i];
+                    if (mode == 0)
+                    {
+                        if (t.Type is Operators op)
+                        {
+                            if (op == Operators.number)
+                            {
+                                numbers.Add(t.data);
+                            }
+                            else if (op == Operators.comma)
+                            {
+
+                            }
+                            else if (op == Operators.hyphen && i > 0)
+                            {
+                                mode = 1;
+                            }
+                        }
+                        else
+                        {
+                            //TODO: implicit bond location
+                        }
+                    }
+                    else if (mode == 1)
+                    {
+                        if (t.Type is Operators op)
+                        {
+                            throw new FormatException("Wrong token format at token #" + i);
+                        }
+                        else if (t.Type is EngPrefixes engPrefix)
+                        {
+                            //TODO: check prefix validity
+                        }
+                        else if (t.Type is Bonds btype)
+                        {
+                            foreach (int k in numbers)
+                            {
+                                parentChainBonds[k - 1].Type = (BondType)(int)btype;
+                            }
+                            numbers.Clear();
+                            mode = 0;
+                            if (i < exp.TailTokens.Count - 1)
+                            {
+                                if (exp.TailTokens[i + 1].Type is Operators nextOp)
+                                {
+                                    if (nextOp == Operators.hyphen) i++;
+                                }
+                            }
+                        }
+                    }
+                }
                 return this;
             }
 
@@ -269,7 +329,7 @@ namespace VisualChem.Chem
                 for (int i = 0; i < Nodes.Count; i++)
                 {
                     Node n = Nodes[i];
-                    int remain = GetBondCount(n.Type) - GetOther(n).Count;
+                    int remain = GetBondCount(n.Type) - GetOther(n).Select(x => x.Type).Cast<int>().Sum();
                     for (int j = 0; j < remain; j++)
                     {
                         Node h = new Node(Elements.Hydrogen);
@@ -301,7 +361,7 @@ namespace VisualChem.Chem
             }
         }
 
-        
+
 
         public enum Orientation
         {
