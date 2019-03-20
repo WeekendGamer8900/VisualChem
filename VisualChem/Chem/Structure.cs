@@ -136,6 +136,8 @@ namespace VisualChem.Chem
             ol,
             oate,
             al,
+            one,
+            amine
         }
 
         public class Token
@@ -259,6 +261,46 @@ namespace VisualChem.Chem
                 Bonds.Add(new Bond(nodeO2, nodeH, BondType.Single, Orientation.Horizontal));
             }
 
+            void Amine(Node carbon)
+            {
+                Node nodeN = new Node(Elements.Nitrogen);
+                Node nodeH1 = new Node(Elements.Hydrogen);
+                Node nodeH2 = new Node(Elements.Hydrogen);
+                Nodes.Add(nodeN);
+                Nodes.Add(nodeH1);
+                Nodes.Add(nodeH2);
+                Bonds.Add(new Bond(carbon, nodeN, BondType.Single, Orientation.Horizontal));
+                Bonds.Add(new Bond(nodeN, nodeH1, BondType.Single, Orientation.Vertical));
+                Bonds.Add(new Bond(nodeN, nodeH2, BondType.Single, Orientation.Vertical));
+            }
+
+            void Aldehyde(Node carbon)
+            {
+                Node nodeO = new Node(Elements.Oxygen);
+                Node nodeH = new Node(Elements.Hydrogen);
+                Nodes.Add(nodeO);
+                Nodes.Add(nodeH);
+                Bonds.Add(new Bond(carbon, nodeO, BondType.Double, Orientation.Vertical));
+                Bonds.Add(new Bond(carbon, nodeH, BondType.Single, Orientation.Horizontal));
+            }
+
+            void Alcohol(Node carbon)
+            {
+                Node nodeO = new Node(Elements.Oxygen);
+                Node nodeH = new Node(Elements.Hydrogen);
+                Nodes.Add(nodeO);
+                Nodes.Add(nodeH);
+                Bonds.Add(new Bond(carbon, nodeO, BondType.Single, Orientation.Horizontal));
+                Bonds.Add(new Bond(nodeH, nodeO, BondType.Single, Orientation.Vertical));
+            }
+
+            void Ketone(Node carbon)
+            {
+                Node nodeO = new Node(Elements.Oxygen);
+                Nodes.Add(nodeO);
+                Bonds.Add(new Bond(carbon, nodeO, BondType.Double, Orientation.Vertical));
+            }
+
             public Molecule GetRawMolecule(TokenizedExpression exp)
             {
                 //Make parent chain
@@ -281,6 +323,7 @@ namespace VisualChem.Chem
                 int mode = 0;
                 List<int> numbers = new List<int>();
                 int engPreNum = 0;
+                bool ignoreHyphen = true;
                 for (int i = 0; i < exp.TailTokens.Count; i++)
                 {
                     Token t = exp.TailTokens[i];
@@ -300,7 +343,7 @@ namespace VisualChem.Chem
                             {
 
                             }
-                            else if (op == Operators.hyphen && i > 0)
+                            else if (op == Operators.hyphen && !ignoreHyphen)
                             {
                                 mode = 1;
                             }
@@ -319,6 +362,30 @@ namespace VisualChem.Chem
                                 if (engPreNum == 2)
                                     CarboxylicAcid(parentChain.Last());
                             }
+                            else if (suffix == Suffixes.al)
+                            {
+                                Aldehyde(parentChain[0]);
+                                if (engPreNum == 2)
+                                    Aldehyde(parentChain.Last());
+                            }
+                            else if (suffix == Suffixes.ol)
+                            {
+                                Alcohol(parentChain[0]);
+                                if (engPreNum == 2)
+                                    Alcohol(parentChain.Last());
+                            }
+                            else if (suffix == Suffixes.one)
+                            {
+                                Ketone(parentChain[0]);
+                                if (engPreNum == 2)
+                                    Ketone(parentChain.Last());
+                            }
+                            else if (suffix == Suffixes.amine)
+                            {
+                                Amine(parentChain[0]);
+                                if (engPreNum == 2)
+                                    Amine(parentChain.Last());
+                            }
                             numbers.Clear();
                             engPreNum = 0;
                             mode = 0;
@@ -326,13 +393,15 @@ namespace VisualChem.Chem
                         else
                         {
                             //TODO: implicit bond location
+                            ignoreHyphen = true;
                         }
                     }
                     else if (mode == 1)
                     {
                         EngPrefixes engPrefix;
                         Bonds btype;
-                        if (t.Type is Operators)
+                        Suffixes suffix;
+                        if (t.Type is Operators && !ignoreHyphen)
                         {
                             throw new FormatException("Wrong token format at token #" + i);
                         }
@@ -351,16 +420,41 @@ namespace VisualChem.Chem
                             numbers.Clear();
                             engPreNum = 0;
                             mode = 0;
-                            if (i < exp.TailTokens.Count - 1)
+                            ignoreHyphen = true;
+                        }
+                        else if (t.Type is Suffixes)
+                        {
+                            suffix = (Suffixes)t.Type;
+                            if (suffix == Suffixes.ol)
                             {
-                                Operators nextOp;
-                                if (exp.TailTokens[i + 1].Type is Operators)
+                                foreach (int k in numbers)
                                 {
-                                    nextOp = (Operators)exp.TailTokens[i + 1].Type;
-                                    if (nextOp == Operators.hyphen) i++;
+                                    Alcohol(parentChain[k - 1]);
                                 }
                             }
+                            else if (suffix == Suffixes.one)
+                            {
+                                foreach (int k in numbers)
+                                {
+                                    Ketone(parentChain[k - 1]);
+                                }
+                            }
+                            else if (suffix == Suffixes.amine)
+                            {
+                                foreach (int k in numbers)
+                                {
+                                    Amine(parentChain[k - 1]);
+                                }
+                            }
+                            numbers.Clear();
+                            engPreNum = 0;
+                            mode = 0;
+                            ignoreHyphen = true;
                         }
+                    }
+                    if (ignoreHyphen && (t.Type is Operators && (Operators)t.Type == Operators.hyphen))
+                    {
+                        ignoreHyphen = false;
                     }
                 }
                 return this;
