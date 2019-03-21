@@ -13,6 +13,7 @@ namespace VisualChem.Chem
         {
             public List<Node> Nodes = new List<Node>();
             public List<Bond> Bonds = new List<Bond>();
+            public bool simpleMode = true;
 
             int PointToNum(int dx, int dy)
             {
@@ -136,7 +137,7 @@ namespace VisualChem.Chem
                 Bitmap bmp = new Bitmap(width, height);
                 Graphics g = Graphics.FromImage(bmp);
                 int minX = 0, minY = 0, maxX = 0, maxY = 0;
-                foreach (Rendering.Node n in Nodes)
+                foreach (Node n in Nodes)
                 {
                     minX = Math.Min(minX, n.Location.X);
                     minY = Math.Min(minY, n.Location.Y);
@@ -144,51 +145,55 @@ namespace VisualChem.Chem
                     maxY = Math.Max(maxY, n.Location.Y);
                 }
                 g.TranslateTransform(width / 2 + offsetX - (minX + maxX) * 30 * scale / 2, height / 2 + offsetY - (minY + maxY) * 30 * scale / 2);
-                foreach (Rendering.Node n in Nodes)
+                foreach (Node n in Nodes)
                 {
-                    g.DrawString(n.Type.ToDString(), font, Brushes.Black, n.Location.X * 30 * scale, n.Location.Y * 30 * scale, new StringFormat() { LineAlignment = StringAlignment.Center, Alignment = StringAlignment.Center });
+                    if (simpleMode && n.Type != Elements.Hydrogen || !simpleMode)
+                        g.DrawString(n.Type.ToDString(), font, Brushes.Black, n.Location.X * 30 * scale, n.Location.Y * 30 * scale, new StringFormat() { LineAlignment = StringAlignment.Center, Alignment = StringAlignment.Center });
                 }
-                foreach (Rendering.Bond b in Bonds)
+                foreach (Bond b in Bonds)
                 {
                     PointF Dir21 = b.Node2.Location.F().Minus(b.Node1.Location).Normalize();
                     PointF gap = Dir21.Scale(10 * scale);
-                    if (b.Type == BondType.Single || b.Type == BondType.Triple)
+                    if (simpleMode && b.Node1.Type != Elements.Hydrogen && b.Node2.Type != Elements.Hydrogen || !simpleMode)
                     {
-                        g.DrawLine(Pens.Black,
-                            gap.X + b.Node1.Location.X * 30 * scale,
-                            gap.Y + b.Node1.Location.Y * 30 * scale,
-                            -gap.X + b.Node2.Location.X * 30 * scale,
-                            -gap.Y + b.Node2.Location.Y * 30 * scale);
-                    }
-                    if (b.Type == BondType.Triple)
-                    {
-                        double angle = Math.Atan2(Dir21.Y, Dir21.X);
-                        PointF lateral = new PointF((float)Math.Cos(angle + Math.PI / 2), (float)Math.Sin(angle + Math.PI / 2)).Scale(2 * scale);
-                        g.DrawLine(Pens.Black,
-                            lateral.X + gap.X + b.Node1.Location.X * 30 * scale,
-                            lateral.Y + gap.Y + b.Node1.Location.Y * 30 * scale,
-                            lateral.X - gap.X + b.Node2.Location.X * 30 * scale,
-                            lateral.Y - gap.Y + b.Node2.Location.Y * 30 * scale);
-                        g.DrawLine(Pens.Black,
-                            -lateral.X + gap.X + b.Node1.Location.X * 30 * scale,
-                            -lateral.Y + gap.Y + b.Node1.Location.Y * 30 * scale,
-                            -lateral.X - gap.X + b.Node2.Location.X * 30 * scale,
-                            -lateral.Y - gap.Y + b.Node2.Location.Y * 30 * scale);
-                    }
-                    if (b.Type == BondType.Double)
-                    {
-                        double angle = Math.Atan2(Dir21.Y, Dir21.X);
-                        PointF lateral = new PointF((float)Math.Cos(angle + Math.PI / 2), (float)Math.Sin(angle + Math.PI / 2)).Scale(scale);
-                        g.DrawLine(Pens.Black,
-                            lateral.X + gap.X + b.Node1.Location.X * 30 * scale,
-                            lateral.Y + gap.Y + b.Node1.Location.Y * 30 * scale,
-                            lateral.X - gap.X + b.Node2.Location.X * 30 * scale,
-                            lateral.Y - gap.Y + b.Node2.Location.Y * 30 * scale);
-                        g.DrawLine(Pens.Black,
-                            -lateral.X + gap.X + b.Node1.Location.X * 30 * scale,
-                            -lateral.Y + gap.Y + b.Node1.Location.Y * 30 * scale,
-                            -lateral.X - gap.X + b.Node2.Location.X * 30 * scale,
-                            -lateral.Y - gap.Y + b.Node2.Location.Y * 30 * scale);
+                        if (b.Type == BondType.Single || b.Type == BondType.Triple)
+                        {
+                            g.DrawLine(Pens.Black,
+                                gap.X + b.Node1.Location.X * 30 * scale,
+                                gap.Y + b.Node1.Location.Y * 30 * scale,
+                                -gap.X + b.Node2.Location.X * 30 * scale,
+                                -gap.Y + b.Node2.Location.Y * 30 * scale);
+                        }
+                        if (b.Type == BondType.Triple)
+                        {
+                            double angle = Math.Atan2(Dir21.Y, Dir21.X);
+                            PointF lateral = new PointF((float)Math.Cos(angle + Math.PI / 2), (float)Math.Sin(angle + Math.PI / 2)).Scale(2 * scale);
+                            g.DrawLine(Pens.Black,
+                                lateral.X + gap.X + b.Node1.Location.X * 30 * scale,
+                                lateral.Y + gap.Y + b.Node1.Location.Y * 30 * scale,
+                                lateral.X - gap.X + b.Node2.Location.X * 30 * scale,
+                                lateral.Y - gap.Y + b.Node2.Location.Y * 30 * scale);
+                            g.DrawLine(Pens.Black,
+                                -lateral.X + gap.X + b.Node1.Location.X * 30 * scale,
+                                -lateral.Y + gap.Y + b.Node1.Location.Y * 30 * scale,
+                                -lateral.X - gap.X + b.Node2.Location.X * 30 * scale,
+                                -lateral.Y - gap.Y + b.Node2.Location.Y * 30 * scale);
+                        }
+                        if (b.Type == BondType.Double)
+                        {
+                            double angle = Math.Atan2(Dir21.Y, Dir21.X);
+                            PointF lateral = new PointF((float)Math.Cos(angle + Math.PI / 2), (float)Math.Sin(angle + Math.PI / 2)).Scale(scale);
+                            g.DrawLine(Pens.Black,
+                                lateral.X + gap.X + b.Node1.Location.X * 30 * scale,
+                                lateral.Y + gap.Y + b.Node1.Location.Y * 30 * scale,
+                                lateral.X - gap.X + b.Node2.Location.X * 30 * scale,
+                                lateral.Y - gap.Y + b.Node2.Location.Y * 30 * scale);
+                            g.DrawLine(Pens.Black,
+                                -lateral.X + gap.X + b.Node1.Location.X * 30 * scale,
+                                -lateral.Y + gap.Y + b.Node1.Location.Y * 30 * scale,
+                                -lateral.X - gap.X + b.Node2.Location.X * 30 * scale,
+                                -lateral.Y - gap.Y + b.Node2.Location.Y * 30 * scale);
+                        }
                     }
                 }
                 return bmp;

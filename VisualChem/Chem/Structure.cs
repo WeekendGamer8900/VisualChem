@@ -133,6 +133,8 @@ namespace VisualChem.Chem
         {
             [Description("oic acid")]
             oic_acid,
+            [Description("carboxylic acid")]
+            carboxylic_acid,
             ol,
             oate,
             al,
@@ -248,7 +250,7 @@ namespace VisualChem.Chem
                 return ret;
             }
 
-            void CarboxylicAcid(Node carbon)
+            void OicAcid(Node carbon)
             {
                 Node nodeO1 = new Node(Elements.Oxygen);
                 Node nodeO2 = new Node(Elements.Oxygen);
@@ -258,6 +260,22 @@ namespace VisualChem.Chem
                 Nodes.Add(nodeH);
                 Bonds.Add(new Bond(carbon, nodeO2, BondType.Single, Orientation.Horizontal));
                 Bonds.Add(new Bond(carbon, nodeO1, BondType.Double, Orientation.Vertical));
+                Bonds.Add(new Bond(nodeO2, nodeH, BondType.Single, Orientation.Horizontal));
+            }
+
+            void CarboxylicAcid(Node carbon)
+            {
+                Node nodeC = new Node(Elements.Carbon);
+                Node nodeO1 = new Node(Elements.Oxygen);
+                Node nodeO2 = new Node(Elements.Oxygen);
+                Node nodeH = new Node(Elements.Hydrogen);
+                Nodes.Add(nodeC);
+                Nodes.Add(nodeO1);
+                Nodes.Add(nodeO2);
+                Nodes.Add(nodeH);
+                Bonds.Add(new Bond(carbon, nodeC, BondType.Single, Orientation.Horizontal));
+                Bonds.Add(new Bond(nodeC, nodeO2, BondType.Single, Orientation.Horizontal));
+                Bonds.Add(new Bond(nodeC, nodeO1, BondType.Double, Orientation.Vertical));
                 Bonds.Add(new Bond(nodeO2, nodeH, BondType.Single, Orientation.Horizontal));
             }
 
@@ -291,7 +309,7 @@ namespace VisualChem.Chem
                 Nodes.Add(nodeO);
                 Nodes.Add(nodeH);
                 Bonds.Add(new Bond(carbon, nodeO, BondType.Single, Orientation.Horizontal));
-                Bonds.Add(new Bond(nodeH, nodeO, BondType.Single, Orientation.Vertical));
+                Bonds.Add(new Bond(nodeH, nodeO, BondType.Single, Orientation.Horizontal));
             }
 
             void Ketone(Node carbon)
@@ -299,6 +317,35 @@ namespace VisualChem.Chem
                 Node nodeO = new Node(Elements.Oxygen);
                 Nodes.Add(nodeO);
                 Bonds.Add(new Bond(carbon, nodeO, BondType.Double, Orientation.Vertical));
+            }
+
+            void Bromine(Node carbon)
+            {
+                Node nodeBr = new Node(Elements.Bromine);
+                Nodes.Add(nodeBr);
+                Bonds.Add(new Bond(carbon, nodeBr, BondType.Single, Orientation.None));
+            }
+
+            void Chlorine(Node carbon)
+            {
+                Node nodeBr = new Node(Elements.Chlorine);
+                Nodes.Add(nodeBr);
+                Bonds.Add(new Bond(carbon, nodeBr, BondType.Single, Orientation.None));
+            }
+
+            void Alkane(Node carbon, int length)
+            {
+                List<Node> carbonChain = new List<Node>();
+                for (int i = 0; i < length; i++)
+                {
+                    carbonChain.Add(new Node(Elements.Carbon));
+                }
+                Bonds.Add(new Bond(carbon, carbonChain[0], BondType.Single, Orientation.Vertical));
+                for (int i = 0; i < length - 1; i++)
+                {
+                    Bonds.Add(new Bond(carbonChain[i], carbonChain[i + 1], BondType.Single, Orientation.Vertical));
+                }
+                Nodes.AddRange(carbonChain);
             }
 
             public Molecule GetRawMolecule(TokenizedExpression exp)
@@ -357,6 +404,12 @@ namespace VisualChem.Chem
                         {
                             suffix = (Suffixes)t.Type;
                             if (suffix == Suffixes.oic_acid)
+                            {
+                                OicAcid(parentChain[0]);
+                                if (engPreNum == 2)
+                                    OicAcid(parentChain.Last());
+                            }
+                            else if (suffix == Suffixes.carboxylic_acid)
                             {
                                 CarboxylicAcid(parentChain[0]);
                                 if (engPreNum == 2)
@@ -432,6 +485,13 @@ namespace VisualChem.Chem
                                     Alcohol(parentChain[k - 1]);
                                 }
                             }
+                            else if (suffix == Suffixes.carboxylic_acid)
+                            {
+                                foreach (int k in numbers)
+                                {
+                                    CarboxylicAcid(parentChain[k - 1]);
+                                }
+                            }
                             else if (suffix == Suffixes.one)
                             {
                                 foreach (int k in numbers)
@@ -444,6 +504,114 @@ namespace VisualChem.Chem
                                 foreach (int k in numbers)
                                 {
                                     Amine(parentChain[k - 1]);
+                                }
+                            }
+                            numbers.Clear();
+                            engPreNum = 0;
+                            mode = 0;
+                            ignoreHyphen = true;
+                        }
+                    }
+                    if (ignoreHyphen && (t.Type is Operators && (Operators)t.Type == Operators.hyphen))
+                    {
+                        ignoreHyphen = false;
+                    }
+                }
+
+                //make functional groups
+                mode = 0;
+                numbers = new List<int>();
+                engPreNum = 0;
+                ignoreHyphen = false;
+                for (int i = 0; i < exp.FunctionalGpTokens.Count; i++)
+                {
+                    Token t = exp.FunctionalGpTokens[i];
+                    if (mode == 0)
+                    {
+                        Operators op;
+                        EngPrefixes engPre;
+                        if (t.Type is Operators)
+                        {
+                            op = (Operators)t.Type;
+                            if (op == Operators.number)
+                            {
+                                numbers.Add(t.data);
+                            }
+                            else if (op == Operators.comma)
+                            {
+
+                            }
+                            else if (op == Operators.hyphen && !ignoreHyphen)
+                            {
+                                mode = 1;
+                            }
+                        }
+                        else if (t.Type is EngPrefixes)
+                        {
+                            engPre = (EngPrefixes)t.Type;
+                            engPreNum = (int)engPre;
+                        }
+                        else
+                        {
+                            //TODO: implicit bond location
+                            ignoreHyphen = true;
+                        }
+                    }
+                    else if (mode == 1)
+                    {
+                        EngPrefixes engPrefix;
+                        FunctionalGps ftype;
+                        ChemPrefixes chemPrefix;
+                        if (t.Type is Operators && !ignoreHyphen)
+                        {
+                            throw new FormatException("Wrong token format at token #" + i);
+                        }
+                        else if (t.Type is EngPrefixes)
+                        {
+                            engPrefix = (EngPrefixes)t.Type;
+                            //TODO: check prefix validity
+                        }
+                        else if (t.Type is ChemPrefixes)
+                        {
+                            chemPrefix = (ChemPrefixes)t.Type;
+                            if (i < exp.FunctionalGpTokens.Count - 1)
+                            {
+                                ftype = (FunctionalGps)exp.FunctionalGpTokens[i + 1].Type;
+                                if (ftype == FunctionalGps.yl)
+                                {
+                                    foreach (int k in numbers)
+                                    {
+                                        Alkane(parentChain[k - 1], (int)chemPrefix);
+                                    }
+                                }
+                            }
+                            numbers.Clear();
+                            engPreNum = 0;
+                            mode = 0;
+                            ignoreHyphen = true;
+                        }
+                        else if (t.Type is FunctionalGps)
+                        {
+                            ftype = (FunctionalGps)t.Type;
+                            if (ftype == FunctionalGps.bromo)
+                            {
+                                foreach (int k in numbers)
+                                {
+                                    Bromine(parentChain[k - 1]);
+                                }
+                            }
+                            else if (ftype == FunctionalGps.chloro)
+                            {
+                                foreach (int k in numbers)
+                                {
+                                    Chlorine(parentChain[k - 1]);
+                                }
+                            }
+                            else if (ftype == FunctionalGps.hydroxy)
+                            {
+                                foreach (int k in numbers)
+                                {
+                                    Alcohol(parentChain[k - 1]);
                                 }
                             }
                             numbers.Clear();
