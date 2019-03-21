@@ -13,7 +13,7 @@ namespace VisualChem.Chem
         {
             public List<Node> Nodes = new List<Node>();
             public List<Bond> Bonds = new List<Bond>();
-            public bool simpleMode = true;
+            public bool simpleMode = false;
 
             int PointToNum(int dx, int dy)
             {

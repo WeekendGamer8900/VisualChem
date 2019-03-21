@@ -29,7 +29,7 @@ namespace VisualChem
         {
             if (e.KeyCode == Keys.Enter || e.KeyCode == Keys.Return)
             {
-                string tmp = txtName.Text;
+                string tmp = txtName.Text.ToLower();
                 thisMol = new Structure.Molecule();
                 /*
                 Structure.StringExpression l = thisMol.Lexer(tmp);
