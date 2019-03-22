@@ -17,9 +17,17 @@ namespace VisualChem
         public Form1()
         {
             InitializeComponent();
+            imgOut.MouseWheel += ImgOut_MouseWheel;
+        }
+
+        private void ImgOut_MouseWheel(object sender, MouseEventArgs e)
+        {
+            scale *= (float)Math.Pow(1.0001, e.Delta);
         }
 
         Structure.Molecule thisMol = new Structure.Molecule();
+        Rendering.Graph graph = new Rendering.Graph();
+        float scale = 1f;
 
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
@@ -31,6 +39,7 @@ namespace VisualChem
             {
                 string tmp = txtName.Text.ToLower();
                 thisMol = new Structure.Molecule();
+                graph = new Rendering.Graph();
                 /*
                 Structure.StringExpression l = thisMol.Lexer(tmp);
                 if (l.FunctionalGpTokens != null && l.ParentChainTokens != null && l.TailTokens != null)
@@ -46,12 +55,27 @@ namespace VisualChem
                 tl.TailTokens.ForEach((t) => txtName.Text += t.Type.ToString() + " ");
                 */
                 thisMol.FromName(tmp);
-                Rendering.Graph graph = new Rendering.Graph();
                 graph.FromStructure(thisMol);
-                imgOut.Image = graph.GetImage(imgOut.Width, imgOut.Height, Font, 0, 0, 1.5f);
+                imgOut.Image = graph.GetImage(imgOut.Width, imgOut.Height, Font, 0, 0, scale);
                 imgOut.Refresh();
-                Console.WriteLine("");
+                timerAnimation.Start();
             }
+        }
+
+        private void timerAnimation_Tick(object sender, EventArgs e)
+        {
+            imgOut.Image = graph.GetImage(imgOut.Width, imgOut.Height, Font, 0, 0, scale);
+            imgOut.Refresh();
+        }
+
+        private void imgOut_MouseMove(object sender, MouseEventArgs e)
+        {
+            imgOut.Focus();
+        }
+
+        private void txtName_MouseMove(object sender, MouseEventArgs e)
+        {
+            txtName.Focus();
         }
     }
 }

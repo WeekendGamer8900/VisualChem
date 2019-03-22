@@ -54,15 +54,39 @@ namespace VisualChem
         }
         public static PointF Normalize(this PointF p)
         {
+            if (p.Magnitude().Abs() < 0.01)
+            {
+                return new PointF(0, 0);
+            }
             return new PointF(p.X / p.Magnitude(), p.Y / p.Magnitude());
         }
         public static PointF Scale(this PointF p,float x)
         {
             return new PointF(p.X * x, p.Y * x);
         }
-        public static PointF Minus(this PointF p,PointF q)
+        public static PointF Add(this PointF p, PointF q)
         {
-            return new PointF(p.X - q.X, p.Y - q.Y);
+            return new PointF(p.X + q.X, p.Y + q.Y);
+        }
+        public static PointF Invert(this PointF p)
+        {
+            return new PointF(-p.X, -p.Y);
+        }
+        public static PointF Subtract(this PointF p,PointF q)
+        {
+            return p.Add(q.Invert());
+        }
+        public static float Distance(this PointF p,PointF q)
+        {
+            return p.Subtract(q).Magnitude();
+        }
+        public static float Sqr(this float p)
+        {
+            return (float)Math.Pow(p, 2);
+        }
+        public static float Abs(this float p)
+        {
+            return Math.Abs(p);
         }
     }
 }

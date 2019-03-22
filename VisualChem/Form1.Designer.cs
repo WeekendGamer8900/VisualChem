@@ -28,8 +28,10 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.imgOut = new System.Windows.Forms.PictureBox();
             this.txtName = new System.Windows.Forms.TextBox();
+            this.timerAnimation = new System.Windows.Forms.Timer(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.imgOut)).BeginInit();
             this.SuspendLayout();
             // 
@@ -40,23 +42,30 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.imgOut.BackColor = System.Drawing.Color.White;
             this.imgOut.Location = new System.Drawing.Point(0, 0);
-            this.imgOut.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.imgOut.Margin = new System.Windows.Forms.Padding(4);
             this.imgOut.Name = "imgOut";
             this.imgOut.Size = new System.Drawing.Size(814, 450);
             this.imgOut.TabIndex = 0;
             this.imgOut.TabStop = false;
+            this.imgOut.MouseMove += new System.Windows.Forms.MouseEventHandler(this.imgOut_MouseMove);
             // 
             // txtName
             // 
             this.txtName.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.txtName.Font = new System.Drawing.Font("Courier New", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtName.Location = new System.Drawing.Point(0, 453);
-            this.txtName.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.txtName.Margin = new System.Windows.Forms.Padding(4);
             this.txtName.Name = "txtName";
             this.txtName.Size = new System.Drawing.Size(814, 23);
             this.txtName.TabIndex = 1;
             this.txtName.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
             this.txtName.KeyUp += new System.Windows.Forms.KeyEventHandler(this.txtName_KeyUp);
+            this.txtName.MouseMove += new System.Windows.Forms.MouseEventHandler(this.txtName_MouseMove);
+            // 
+            // timerAnimation
+            // 
+            this.timerAnimation.Interval = 1;
+            this.timerAnimation.Tick += new System.EventHandler(this.timerAnimation_Tick);
             // 
             // Form1
             // 
@@ -67,7 +76,7 @@
             this.Controls.Add(this.imgOut);
             this.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.KeyPreview = true;
-            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "Form1";
             this.Text = "VisualChem";
             ((System.ComponentModel.ISupportInitialize)(this.imgOut)).EndInit();
@@ -80,6 +89,7 @@
 
         private System.Windows.Forms.PictureBox imgOut;
         private System.Windows.Forms.TextBox txtName;
+        private System.Windows.Forms.Timer timerAnimation;
     }
 }
 

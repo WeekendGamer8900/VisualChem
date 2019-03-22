@@ -15,7 +15,7 @@ namespace VisualChem.Chem
             public List<Bond> Bonds = new List<Bond>();
             public bool simpleMode = false;
 
-            int PointToNum(int dx, int dy)
+            int PointToNum(float dx, float dy)
             {
                 if (dx == 0)
                 {
@@ -40,27 +40,27 @@ namespace VisualChem.Chem
                     }
                 }
             }
-            Point NumToPoint(int num)
+            PointF NumToPoint(int num)
             {
                 if (num == 1)
                 {
-                    return new Point(1, 0);
+                    return new PointF(1, 0);
                 }
                 else if (num == 2)
                 {
-                    return new Point(0, 1);
+                    return new PointF(0, 1);
                 }
                 else if (num == 3)
                 {
-                    return new Point(-1, 0);
+                    return new PointF(-1, 0);
                 }
                 else if (num == 4)
                 {
-                    return new Point(0, -1);
+                    return new PointF(0, -1);
                 }
                 else
                 {
-                    return new Point(0, 0);
+                    return new PointF(0, 0);
                 }
             }
 
@@ -91,7 +91,7 @@ namespace VisualChem.Chem
                 foreach (Structure.Bond bd in horizontals)
                 {
                     if (!availableDirs.Contains(PointToNum(dir, 0))) dir *= -1;
-                    Node tmpNd = new Node(bd.GetOther(info).Type, new Point(baseNode.Location.X + dir, baseNode.Location.Y));
+                    Node tmpNd = new Node(bd.GetOther(info).Type, new PointF(baseNode.Location.X + dir, baseNode.Location.Y));
                     Nodes.Add(tmpNd);
                     availableDirs.Remove(PointToNum(dir, 0));
                     dir *= -1;
@@ -111,7 +111,7 @@ namespace VisualChem.Chem
                 foreach (Structure.Bond bd in verticals)
                 {
                     if (!availableDirs.Contains(PointToNum(0, dir))) dir *= -1;
-                    Node tmpNd = new Node(bd.GetOther(info).Type, new Point(baseNode.Location.X, baseNode.Location.Y + dir));
+                    Node tmpNd = new Node(bd.GetOther(info).Type, new PointF(baseNode.Location.X, baseNode.Location.Y + dir));
                     Nodes.Add(tmpNd);
                     availableDirs.Remove(PointToNum(0, dir));
                     dir *= -1;
@@ -122,8 +122,8 @@ namespace VisualChem.Chem
 
                 foreach (Structure.Bond bd in connections)
                 {
-                    Point offset = NumToPoint(availableDirs[0]);
-                    Node tmpNd = new Node(bd.GetOther(info).Type, new Point(baseNode.Location.X + offset.X, baseNode.Location.Y + offset.Y));
+                    PointF offset = NumToPoint(availableDirs[0]);
+                    Node tmpNd = new Node(bd.GetOther(info).Type, new PointF(baseNode.Location.X + offset.X, baseNode.Location.Y + offset.Y));
                     Nodes.Add(tmpNd);
                     Bond tmpbd = new Bond(baseNode, tmpNd, bd.Type);
                     Bonds.Add(tmpbd);
@@ -136,7 +136,7 @@ namespace VisualChem.Chem
             {
                 Bitmap bmp = new Bitmap(width, height);
                 Graphics g = Graphics.FromImage(bmp);
-                int minX = 0, minY = 0, maxX = 0, maxY = 0;
+                float minX = 0, minY = 0, maxX = 0, maxY = 0;
                 foreach (Node n in Nodes)
                 {
                     minX = Math.Min(minX, n.Location.X);
@@ -152,8 +152,8 @@ namespace VisualChem.Chem
                 }
                 foreach (Bond b in Bonds)
                 {
-                    PointF Dir21 = b.Node2.Location.F().Minus(b.Node1.Location).Normalize();
-                    PointF gap = Dir21.Scale(10 * scale);
+                    PointF Dir21 = b.Node2.Location.Subtract(b.Node1.Location).Normalize();
+                    PointF gap = Dir21.Scale(10);
                     if (simpleMode && b.Node1.Type != Elements.Hydrogen && b.Node2.Type != Elements.Hydrogen || !simpleMode)
                     {
                         if (b.Type == BondType.Single || b.Type == BondType.Triple)
@@ -167,7 +167,7 @@ namespace VisualChem.Chem
                         if (b.Type == BondType.Triple)
                         {
                             double angle = Math.Atan2(Dir21.Y, Dir21.X);
-                            PointF lateral = new PointF((float)Math.Cos(angle + Math.PI / 2), (float)Math.Sin(angle + Math.PI / 2)).Scale(2 * scale);
+                            PointF lateral = new PointF((float)Math.Cos(angle + Math.PI / 2), (float)Math.Sin(angle + Math.PI / 2)).Scale(4);
                             g.DrawLine(Pens.Black,
                                 lateral.X + gap.X + b.Node1.Location.X * 30 * scale,
                                 lateral.Y + gap.Y + b.Node1.Location.Y * 30 * scale,
@@ -182,7 +182,7 @@ namespace VisualChem.Chem
                         if (b.Type == BondType.Double)
                         {
                             double angle = Math.Atan2(Dir21.Y, Dir21.X);
-                            PointF lateral = new PointF((float)Math.Cos(angle + Math.PI / 2), (float)Math.Sin(angle + Math.PI / 2)).Scale(scale);
+                            PointF lateral = new PointF((float)Math.Cos(angle + Math.PI / 2), (float)Math.Sin(angle + Math.PI / 2)).Scale(2);
                             g.DrawLine(Pens.Black,
                                 lateral.X + gap.X + b.Node1.Location.X * 30 * scale,
                                 lateral.Y + gap.Y + b.Node1.Location.Y * 30 * scale,
@@ -196,7 +196,46 @@ namespace VisualChem.Chem
                         }
                     }
                 }
+                for (int i = 0; i < 10; i++)
+                    Tick();
                 return bmp;
+            }
+
+            public float G = 0.01f;
+            public float K = 0.001f;
+
+            public Graph Tick()
+            {
+                //Resistance between nodes
+                for (int i = 0; i < Nodes.Count; i++)
+                {
+                    for (int j = i + 1; j < Nodes.Count; j++)
+                    {
+                        Node a = Nodes[i];
+                        Node b = Nodes[j];
+                        float force = G / Math.Max(0.3f,a.Location.Distance(b.Location)).Sqr();
+                        a.Velocity = a.Velocity.Add(a.Location.Subtract(b.Location).Normalize().Scale(force));
+                        b.Velocity = b.Velocity.Add(b.Location.Subtract(a.Location).Normalize().Scale(force));
+                    }
+                }
+
+                //Bonds
+                for (int i = 0; i < Bonds.Count; i++)
+                {
+                    Node a = Bonds[i].Node1;
+                    Node b = Bonds[i].Node2;
+                    a.Velocity = a.Velocity.Add(b.Location.Subtract(a.Location).Normalize().Scale(K * a.Location.Distance(b.Location)));
+                    b.Velocity = b.Velocity.Add(a.Location.Subtract(b.Location).Normalize().Scale(K * a.Location.Distance(b.Location)));
+                }
+
+                //Process velocity
+                for (int i = 0; i < Nodes.Count; i++)
+                {
+                    Nodes[i].Location = Nodes[i].Location.Add(Nodes[i].Velocity);
+                    Nodes[i].Velocity = Nodes[i].Velocity.Scale(0.9f);
+                }
+
+                return this;
             }
 
             public Graph FromStructure(Structure.Molecule molecule)
@@ -226,9 +265,10 @@ namespace VisualChem.Chem
 
         public class Node
         {
-            public Point Location;
+            public PointF Location;
+            public PointF Velocity = new PointF(0, 0);
             public Elements Type;
-            public Node(Elements t, Point loc = default(Point))
+            public Node(Elements t, PointF loc = default(PointF))
             {
                 Type = t;
                 Location = loc;
