@@ -201,8 +201,9 @@ namespace VisualChem.Chem
                 return bmp;
             }
 
-            public float G = 0.01f;
-            public float K = 0.001f;
+            public float G = 0.1f;
+            public float K = 0.1f;
+            public float length = 2f;
 
             public Graph Tick()
             {
@@ -224,8 +225,8 @@ namespace VisualChem.Chem
                 {
                     Node a = Bonds[i].Node1;
                     Node b = Bonds[i].Node2;
-                    a.Velocity = a.Velocity.Add(b.Location.Subtract(a.Location).Normalize().Scale(K * a.Location.Distance(b.Location)));
-                    b.Velocity = b.Velocity.Add(a.Location.Subtract(b.Location).Normalize().Scale(K * a.Location.Distance(b.Location)));
+                    a.Velocity = a.Velocity.Add(b.Location.Subtract(a.Location).Normalize().Scale(K * (a.Location.Distance(b.Location)-length)));
+                    b.Velocity = b.Velocity.Add(a.Location.Subtract(b.Location).Normalize().Scale(K * (a.Location.Distance(b.Location) - length)));
                 }
 
                 //Process velocity
