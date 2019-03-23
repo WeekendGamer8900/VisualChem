@@ -14,6 +14,8 @@ namespace VisualChem.Chem
             public List<Node> Nodes = new List<Node>();
             public List<Bond> Bonds = new List<Bond>();
             public bool simpleMode = false;
+            public bool randomStruct = false;
+            public float RefScale = 1f;
 
             int PointToNum(float dx, float dy)
             {
@@ -80,44 +82,51 @@ namespace VisualChem.Chem
                     if (connections.Contains(lastInfo)) connections.Remove(lastInfo);
                 }
 
-                List<Structure.Bond> horizontals = connections.Where(p => p.Orientation == Structure.Orientation.Horizontal).ToList();
-                int horizontalCnt = (availableDirs.Contains(1) ? 1 : 0) + (availableDirs.Contains(3) ? 1 : 0);
-                if (horizontals.Count > horizontalCnt)
+                if (!randomStruct)
                 {
-                    horizontals = horizontals.Take(horizontalCnt).ToList();
-                }
-                connections = connections.Except(horizontals).ToList();
-                int dir = 1;
-                foreach (Structure.Bond bd in horizontals)
-                {
-                    if (!availableDirs.Contains(PointToNum(dir, 0))) dir *= -1;
-                    Node tmpNd = new Node(bd.GetOther(info).Type, new PointF(baseNode.Location.X + dir, baseNode.Location.Y));
-                    Nodes.Add(tmpNd);
-                    availableDirs.Remove(PointToNum(dir, 0));
-                    dir *= -1;
-                    Bond tmpbd = new Bond(baseNode, tmpNd, bd.Type);
-                    Bonds.Add(tmpbd);
-                    DrawGraph(molecule, tmpbd, bd, tmpNd, bd.GetOther(info));
-                }
+                    List<Structure.Bond> horizontals = connections.Where(p => p.Orientation == Structure.Orientation.Horizontal).ToList();
+                    int horizontalCnt = (availableDirs.Contains(1) ? 1 : 0) + (availableDirs.Contains(3) ? 1 : 0);
+                    if (horizontals.Count > horizontalCnt)
+                    {
+                        horizontals = horizontals.Take(horizontalCnt).ToList();
+                    }
+                    connections = connections.Except(horizontals).ToList();
+                    int dir = 1;
+                    foreach (Structure.Bond bd in horizontals)
+                    {
+                        if (!availableDirs.Contains(PointToNum(dir, 0))) dir *= -1;
+                        Node tmpNd = new Node(bd.GetOther(info).Type, new PointF(baseNode.Location.X + dir, baseNode.Location.Y));
+                        Nodes.Add(tmpNd);
+                        availableDirs.Remove(PointToNum(dir, 0));
+                        dir *= -1;
+                        Bond tmpbd = new Bond(baseNode, tmpNd, bd.Type);
+                        Bonds.Add(tmpbd);
+                        DrawGraph(molecule, tmpbd, bd, tmpNd, bd.GetOther(info));
+                    }
 
-                List<Structure.Bond> verticals = connections.Where(p => p.Orientation == Structure.Orientation.Vertical).ToList();
-                int verticalCnt = (availableDirs.Contains(2) ? 1 : 0) + (availableDirs.Contains(4) ? 1 : 0);
-                if (verticals.Count > verticalCnt)
-                {
-                    verticals = verticals.Take(verticalCnt).ToList();
+                    List<Structure.Bond> verticals = connections.Where(p => p.Orientation == Structure.Orientation.Vertical).ToList();
+                    int verticalCnt = (availableDirs.Contains(2) ? 1 : 0) + (availableDirs.Contains(4) ? 1 : 0);
+                    if (verticals.Count > verticalCnt)
+                    {
+                        verticals = verticals.Take(verticalCnt).ToList();
+                    }
+                    connections = connections.Except(verticals).ToList();
+                    dir = -1;
+                    foreach (Structure.Bond bd in verticals)
+                    {
+                        if (!availableDirs.Contains(PointToNum(0, dir))) dir *= -1;
+                        Node tmpNd = new Node(bd.GetOther(info).Type, new PointF(baseNode.Location.X, baseNode.Location.Y + dir));
+                        Nodes.Add(tmpNd);
+                        availableDirs.Remove(PointToNum(0, dir));
+                        dir *= -1;
+                        Bond tmpbd = new Bond(baseNode, tmpNd, bd.Type);
+                        Bonds.Add(tmpbd);
+                        DrawGraph(molecule, tmpbd, bd, tmpNd, bd.GetOther(info));
+                    }
                 }
-                connections = connections.Except(verticals).ToList();
-                dir = -1;
-                foreach (Structure.Bond bd in verticals)
+                else
                 {
-                    if (!availableDirs.Contains(PointToNum(0, dir))) dir *= -1;
-                    Node tmpNd = new Node(bd.GetOther(info).Type, new PointF(baseNode.Location.X, baseNode.Location.Y + dir));
-                    Nodes.Add(tmpNd);
-                    availableDirs.Remove(PointToNum(0, dir));
-                    dir *= -1;
-                    Bond tmpbd = new Bond(baseNode, tmpNd, bd.Type);
-                    Bonds.Add(tmpbd);
-                    DrawGraph(molecule, tmpbd, bd, tmpNd, bd.GetOther(info));
+                    connections.Shuffle();
                 }
 
                 foreach (Structure.Bond bd in connections)
@@ -136,7 +145,7 @@ namespace VisualChem.Chem
             {
                 Bitmap bmp = new Bitmap(width, height);
                 Graphics g = Graphics.FromImage(bmp);
-                float minX = 0, minY = 0, maxX = 0, maxY = 0;
+                float minX = float.PositiveInfinity, minY = float.PositiveInfinity, maxX = float.NegativeInfinity, maxY = float.NegativeInfinity;
                 foreach (Node n in Nodes)
                 {
                     minX = Math.Min(minX, n.Location.X);
@@ -149,6 +158,7 @@ namespace VisualChem.Chem
                 PointF origin = new PointF((minX + maxX) * 30 * scale / 2, (minY + maxY) * 30 * scale / 2);
                 scale = Math.Min(width / 2 / (maxX * 30 * scale - origin.X), height / 2 / (maxY * 30 * scale - origin.Y)) * 0.9f;
                 scale *= s;
+                RefScale = scale;
                 origin = new PointF((minX + maxX) * 30 * scale / 2, (minY + maxY) * 30 * scale / 2);
                 g.TranslateTransform(width / 2 + offsetX - origin.X, height / 2 + offsetY - origin.Y);
                 foreach (Node n in Nodes)
@@ -210,6 +220,15 @@ namespace VisualChem.Chem
             public float G = 0.1f;
             public float K = 0.1f;
             public float length = 2f;
+
+            public Graph Shake()
+            {
+                for (int i = 0; i < Nodes.Count; i++)
+                {
+                    Nodes[i].Velocity = new PointF(Helper.Rnd(-10, 10), Helper.Rnd(-10, 10));
+                }
+                return this;
+            }
 
             public Graph Tick()
             {

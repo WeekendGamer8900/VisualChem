@@ -73,6 +73,7 @@ namespace VisualChem
         {
             imgOut.Image = graph.GetImage(imgOut.Width, imgOut.Height, Font, 0, 0, scale);
             imgOut.Refresh();
+            Text = "VisualChem - " + (1f / graph.RefScale).ToString("F2");
         }
 
         private void imgOut_MouseMove(object sender, MouseEventArgs e)
@@ -83,6 +84,14 @@ namespace VisualChem
         private void txtName_MouseMove(object sender, MouseEventArgs e)
         {
             txtName.Focus();
+        }
+
+        private void Form1_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.S)
+            {
+                graph.Shake();
+            }
         }
     }
 }
