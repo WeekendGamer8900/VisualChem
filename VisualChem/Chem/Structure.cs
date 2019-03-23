@@ -120,10 +120,11 @@ namespace VisualChem.Chem
             octadec = 18,
             nonadec = 19,
             icos = 20,
+            tricos = 23,
         }
         public enum FunctionalGps
         {
-            yl, oxy, hydroxy, carboxyl, bromo, chloro
+            yl, oxy, hydroxy, carboxyl, bromo, chloro, fluoro, oxo
         }
         public enum Bonds
         {
@@ -324,6 +325,12 @@ namespace VisualChem.Chem
                 Node nodeBr = new Node(Elements.Bromine);
                 Nodes.Add(nodeBr);
                 Bonds.Add(new Bond(carbon, nodeBr, BondType.Single, Orientation.None));
+            }
+            void Fluorine(Node carbon)
+            {
+                Node nodeF = new Node(Elements.Fluorine);
+                Nodes.Add(nodeF);
+                Bonds.Add(new Bond(carbon, nodeF, BondType.Single, Orientation.None));
             }
 
             void Chlorine(Node carbon)
@@ -570,7 +577,7 @@ namespace VisualChem.Chem
                         }
                         else
                         {
-                            //TODO: implicit bond location
+                            //TODO: implicit functional group location
                             ignoreHyphen = true;
                         }
                     }
@@ -624,11 +631,25 @@ namespace VisualChem.Chem
                                     Bromine(parentChain[k - 1]);
                                 }
                             }
+                            if (ftype == FunctionalGps.oxo)
+                            {
+                                foreach (int k in numbers)
+                                {
+                                    Ketone(parentChain[k - 1]);
+                                }
+                            }
                             else if (ftype == FunctionalGps.chloro)
                             {
                                 foreach (int k in numbers)
                                 {
                                     Chlorine(parentChain[k - 1]);
+                                }
+                            }
+                            else if (ftype == FunctionalGps.fluoro)
+                            {
+                                foreach (int k in numbers)
+                                {
+                                    Fluorine(parentChain[k - 1]);
                                 }
                             }
                             else if (ftype == FunctionalGps.hydroxy)
@@ -771,6 +792,8 @@ namespace VisualChem.Chem
         Chlorine,
         [Description("Br")]
         Bromine,
+        [Description("F")]
+        Fluorine,
         [Description("N")]
         Nitrogen
     }
