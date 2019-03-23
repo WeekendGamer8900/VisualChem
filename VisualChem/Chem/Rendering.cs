@@ -144,7 +144,13 @@ namespace VisualChem.Chem
                     maxX = Math.Max(maxX, n.Location.X);
                     maxY = Math.Max(maxY, n.Location.Y);
                 }
-                g.TranslateTransform(width / 2 + offsetX - (minX + maxX) * 30 * scale / 2, height / 2 + offsetY - (minY + maxY) * 30 * scale / 2);
+                float s = scale;
+                scale = 1f;
+                PointF origin = new PointF((minX + maxX) * 30 * scale / 2, (minY + maxY) * 30 * scale / 2);
+                scale = Math.Min(width / 2 / (maxX * 30 * scale - origin.X), height / 2 / (maxY * 30 * scale - origin.Y)) * 0.9f;
+                scale *= s;
+                origin = new PointF((minX + maxX) * 30 * scale / 2, (minY + maxY) * 30 * scale / 2);
+                g.TranslateTransform(width / 2 + offsetX - origin.X, height / 2 + offsetY - origin.Y);
                 foreach (Node n in Nodes)
                 {
                     if (simpleMode && n.Type != Elements.Hydrogen || !simpleMode)

@@ -348,6 +348,23 @@ namespace VisualChem.Chem
                 Nodes.AddRange(carbonChain);
             }
 
+            void Ether(Node carbon, int length)
+            {
+                Node nodeO = new Node(Elements.Oxygen);
+                List<Node> carbonChain = new List<Node>();
+                for (int i = 0; i < length; i++)
+                {
+                    carbonChain.Add(new Node(Elements.Carbon));
+                }
+                Bonds.Add(new Bond(nodeO, carbonChain[0], BondType.Single, Orientation.Vertical));
+                Bonds.Add(new Bond(carbon, nodeO, BondType.Single, Orientation.Vertical));
+                for (int i = 0; i < length - 1; i++)
+                {
+                    Bonds.Add(new Bond(carbonChain[i], carbonChain[i + 1], BondType.Single, Orientation.Vertical));
+                }
+                Nodes.AddRange(carbonChain);
+            }
+
             public Molecule GetRawMolecule(TokenizedExpression exp)
             {
                 //Make parent chain
@@ -582,6 +599,13 @@ namespace VisualChem.Chem
                                     foreach (int k in numbers)
                                     {
                                         Alkane(parentChain[k - 1], (int)chemPrefix);
+                                    }
+                                }
+                                else if (ftype == FunctionalGps.oxy)
+                                {
+                                    foreach (int k in numbers)
+                                    {
+                                        Ether(parentChain[k - 1], (int)chemPrefix);
                                     }
                                 }
                             }
