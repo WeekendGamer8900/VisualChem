@@ -15,7 +15,11 @@ namespace VisualChem.Chem
             public List<Bond> Bonds = new List<Bond>();
             public bool simpleMode = false;
             public bool randomStruct = false;
+            public bool fixCamera = false;
             public float RefScale = 1f;
+            public PointF Cursor;
+            public Node Selected;
+            public PointF origin = new PointF(0, 0);
 
             int PointToNum(float dx, float dy)
             {
@@ -141,6 +145,23 @@ namespace VisualChem.Chem
                 }
             }
 
+            public Graph Recenter()
+            {
+                float minX = float.PositiveInfinity, minY = float.PositiveInfinity, maxX = float.NegativeInfinity, maxY = float.NegativeInfinity;
+                foreach (Node n in Nodes)
+                {
+                    minX = Math.Min(minX, n.Location.X);
+                    minY = Math.Min(minY, n.Location.Y);
+                    maxX = Math.Max(maxX, n.Location.X);
+                    maxY = Math.Max(maxY, n.Location.Y);
+                }
+                foreach (Node n in Nodes)
+                {
+                    n.Location = n.Location.Subtract(new PointF((maxX + minX) / 2, (maxY + minY) / 2));
+                }
+                return this;
+            }
+
             public Bitmap GetImage(int width, int height, Font font, float offsetX, float offsetY, float scale)
             {
                 Bitmap bmp = new Bitmap(width, height);
@@ -153,19 +174,64 @@ namespace VisualChem.Chem
                     maxX = Math.Max(maxX, n.Location.X);
                     maxY = Math.Max(maxY, n.Location.Y);
                 }
-                float s = scale;
-                scale = 1f;
-                PointF origin = new PointF((minX + maxX) * 30 * scale / 2, (minY + maxY) * 30 * scale / 2);
-                scale = Math.Min(width / 2 / (maxX * 30 * scale - origin.X), height / 2 / (maxY * 30 * scale - origin.Y)) * 0.9f;
-                scale *= s;
-                RefScale = scale;
-                origin = new PointF((minX + maxX) * 30 * scale / 2, (minY + maxY) * 30 * scale / 2);
+                if (!fixCamera)
+                {
+                    float s = scale;
+                    scale = 1f;
+                    origin = new PointF((minX + maxX) * 30 * scale / 2, (minY + maxY) * 30 * scale / 2);
+                    scale = Math.Min(width / 2 / (maxX * 30 * scale - origin.X), height / 2 / (maxY * 30 * scale - origin.Y)) * 0.9f;
+                    scale *= s;
+                    RefScale = scale;
+                    origin = new PointF((minX + maxX) * 30 * scale / 2, (minY + maxY) * 30 * scale / 2);
+                }
+                else
+                {
+                    scale = RefScale;
+                }
+                if (Math.Abs((minX + maxX) * 30 * scale / 2) > 10000f || Math.Abs((minY + maxY) * 30 * scale / 2) > 10000f)
+                {
+                    Recenter();
+                    minX = float.PositiveInfinity;
+                    minY = float.PositiveInfinity;
+                    maxX = float.NegativeInfinity;
+                    maxY = float.NegativeInfinity;
+                    foreach (Node n in Nodes)
+                    {
+                        minX = Math.Min(minX, n.Location.X);
+                        minY = Math.Min(minY, n.Location.Y);
+                        maxX = Math.Max(maxX, n.Location.X);
+                        maxY = Math.Max(maxY, n.Location.Y);
+                    }
+                    if (!fixCamera)
+                    {
+                        float s = scale;
+                        scale = 1f;
+                        origin = new PointF((minX + maxX) * 30 * scale / 2, (minY + maxY) * 30 * scale / 2);
+                        scale = Math.Min(width / 2 / (maxX * 30 * scale - origin.X), height / 2 / (maxY * 30 * scale - origin.Y)) * 0.9f;
+                        scale *= s;
+                        RefScale = scale;
+                        origin = new PointF((minX + maxX) * 30 * scale / 2, (minY + maxY) * 30 * scale / 2);
+                    }
+                }
                 g.TranslateTransform(width / 2 + offsetX - origin.X, height / 2 + offsetY - origin.Y);
+                bool found = false;
                 foreach (Node n in Nodes)
                 {
                     if (simpleMode && n.Type != Elements.Hydrogen || !simpleMode)
-                        g.DrawString(n.Type.ToDString(), font, Brushes.Black, n.Location.X * 30 * scale, n.Location.Y * 30 * scale, new StringFormat() { LineAlignment = StringAlignment.Center, Alignment = StringAlignment.Center });
+                    {
+                        if (found || Selected != null && Selected.Locked)
+                        {
+                            g.DrawString(n.Type.ToDString(), font, Brushes.Black, n.Location.X * 30 * scale, n.Location.Y * 30 * scale, new StringFormat() { LineAlignment = StringAlignment.Center, Alignment = StringAlignment.Center });
+                        }
+                        else if (Cursor.Distance(n.Location.Scale(30f * scale).Add(new PointF(width / 2 + offsetX, height / 2 + offsetY)).Subtract(origin)) < 10f)
+                        {
+                            found = true;
+                            Selected = n;
+                        }
+                    }
+                    g.DrawString(n.Type.ToDString(), font, n == Selected ? Brushes.Silver : Brushes.Black, n.Location.X * 30 * scale, n.Location.Y * 30 * scale, new StringFormat() { LineAlignment = StringAlignment.Center, Alignment = StringAlignment.Center });
                 }
+                if ((Selected == null || !Selected.Locked) && !found) Selected = null;
                 foreach (Bond b in Bonds)
                 {
                     PointF Dir21 = b.Node2.Location.Subtract(b.Node1.Location).Normalize();
@@ -239,7 +305,7 @@ namespace VisualChem.Chem
                     {
                         Node a = Nodes[i];
                         Node b = Nodes[j];
-                        float force = G / Math.Max(0.3f,a.Location.Distance(b.Location)).Sqr();
+                        float force = G / Math.Max(0.3f, a.Location.Distance(b.Location)).Sqr();
                         a.Velocity = a.Velocity.Add(a.Location.Subtract(b.Location).Normalize().Scale(force));
                         b.Velocity = b.Velocity.Add(b.Location.Subtract(a.Location).Normalize().Scale(force));
                     }
@@ -250,14 +316,15 @@ namespace VisualChem.Chem
                 {
                     Node a = Bonds[i].Node1;
                     Node b = Bonds[i].Node2;
-                    a.Velocity = a.Velocity.Add(b.Location.Subtract(a.Location).Normalize().Scale(K * (a.Location.Distance(b.Location)-length)));
+                    a.Velocity = a.Velocity.Add(b.Location.Subtract(a.Location).Normalize().Scale(K * (a.Location.Distance(b.Location) - length)));
                     b.Velocity = b.Velocity.Add(a.Location.Subtract(b.Location).Normalize().Scale(K * (a.Location.Distance(b.Location) - length)));
                 }
 
                 //Process velocity
                 for (int i = 0; i < Nodes.Count; i++)
                 {
-                    Nodes[i].Location = Nodes[i].Location.Add(Nodes[i].Velocity);
+                    if (!Nodes[i].Locked)
+                        Nodes[i].Location = Nodes[i].Location.Add(Nodes[i].Velocity);
                     Nodes[i].Velocity = Nodes[i].Velocity.Scale(0.9f);
                 }
 
@@ -277,7 +344,7 @@ namespace VisualChem.Chem
                 return this;
             }
 
-            List<Bond> GetOther(Node thisNode)
+            public List<Bond> GetOther(Node thisNode)
             {
                 List<Bond> ret = new List<Bond>();
                 foreach (Bond b in Bonds)
@@ -294,6 +361,7 @@ namespace VisualChem.Chem
             public PointF Location;
             public PointF Velocity = new PointF(0, 0);
             public Elements Type;
+            public bool Locked = false;
             public Node(Elements t, PointF loc = default(PointF))
             {
                 Type = t;

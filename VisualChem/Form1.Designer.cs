@@ -47,7 +47,9 @@
             this.imgOut.Size = new System.Drawing.Size(814, 450);
             this.imgOut.TabIndex = 0;
             this.imgOut.TabStop = false;
+            this.imgOut.MouseDown += new System.Windows.Forms.MouseEventHandler(this.imgOut_MouseDown);
             this.imgOut.MouseMove += new System.Windows.Forms.MouseEventHandler(this.imgOut_MouseMove);
+            this.imgOut.MouseUp += new System.Windows.Forms.MouseEventHandler(this.imgOut_MouseUp);
             // 
             // txtName
             // 
