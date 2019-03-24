@@ -114,7 +114,8 @@ namespace VisualChem
 
         private void imgOut_MouseMove(object sender, MouseEventArgs e)
         {
-            imgOut.Focus();
+            if (graph.Nodes.Count > 0)
+                imgOut.Focus();
             graph.Cursor = e.Location.F();
             if (e.Button == MouseButtons.Left)
                 if (graph.Selected != null)

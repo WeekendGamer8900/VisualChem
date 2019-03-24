@@ -70,6 +70,8 @@ namespace VisualChem.Chem
                 }
             }
 
+            Dictionary<Structure.Node,Node> visited = new Dictionary<Structure.Node,Node>();
+
             void DrawGraph(Structure.Molecule molecule, Bond lastBond, Structure.Bond lastInfo, Node baseNode, Structure.Node info)
             {
                 List<Structure.Bond> connections = molecule.GetOther(info);
@@ -99,13 +101,25 @@ namespace VisualChem.Chem
                     foreach (Structure.Bond bd in horizontals)
                     {
                         if (!availableDirs.Contains(PointToNum(dir, 0))) dir *= -1;
-                        Node tmpNd = new Node(bd.GetOther(info).Type, new PointF(baseNode.Location.X + dir, baseNode.Location.Y));
-                        Nodes.Add(tmpNd);
+                        Node tmpNd;
+                        if (visited.Keys.Contains(bd.GetOther(info)))
+                        {
+                            tmpNd = visited[bd.GetOther(info)];
+                        }
+                        else
+                        {
+                            tmpNd = new Node(bd.GetOther(info).Type, new PointF(baseNode.Location.X + dir, baseNode.Location.Y));
+                            Nodes.Add(tmpNd);
+                        }
                         availableDirs.Remove(PointToNum(dir, 0));
                         dir *= -1;
                         Bond tmpbd = new Bond(baseNode, tmpNd, bd.Type);
                         Bonds.Add(tmpbd);
-                        DrawGraph(molecule, tmpbd, bd, tmpNd, bd.GetOther(info));
+                        if (!visited.Keys.Contains(bd.GetOther(info)))
+                        {
+                            DrawGraph(molecule, tmpbd, bd, tmpNd, bd.GetOther(info));
+                            visited.Add(bd.GetOther(info), tmpNd);
+                        }
                     }
 
                     List<Structure.Bond> verticals = connections.Where(p => p.Orientation == Structure.Orientation.Vertical).ToList();
@@ -119,13 +133,25 @@ namespace VisualChem.Chem
                     foreach (Structure.Bond bd in verticals)
                     {
                         if (!availableDirs.Contains(PointToNum(0, dir))) dir *= -1;
-                        Node tmpNd = new Node(bd.GetOther(info).Type, new PointF(baseNode.Location.X, baseNode.Location.Y + dir));
-                        Nodes.Add(tmpNd);
+                        Node tmpNd;
+                        if (visited.Keys.Contains(bd.GetOther(info)))
+                        {
+                            tmpNd = visited[bd.GetOther(info)];
+                        }
+                        else
+                        {
+                            tmpNd = new Node(bd.GetOther(info).Type, new PointF(baseNode.Location.X, baseNode.Location.Y + dir));
+                            Nodes.Add(tmpNd);
+                        }
                         availableDirs.Remove(PointToNum(0, dir));
                         dir *= -1;
                         Bond tmpbd = new Bond(baseNode, tmpNd, bd.Type);
                         Bonds.Add(tmpbd);
-                        DrawGraph(molecule, tmpbd, bd, tmpNd, bd.GetOther(info));
+                        if (!visited.Keys.Contains(bd.GetOther(info)))
+                        {
+                            DrawGraph(molecule, tmpbd, bd, tmpNd, bd.GetOther(info));
+                            visited.Add(bd.GetOther(info), tmpNd);
+                        }
                     }
                 }
                 else
@@ -136,11 +162,23 @@ namespace VisualChem.Chem
                 foreach (Structure.Bond bd in connections)
                 {
                     PointF offset = NumToPoint(availableDirs[0]);
-                    Node tmpNd = new Node(bd.GetOther(info).Type, new PointF(baseNode.Location.X + offset.X, baseNode.Location.Y + offset.Y));
-                    Nodes.Add(tmpNd);
+                    Node tmpNd;
+                    if (visited.Keys.Contains(bd.GetOther(info)))
+                    {
+                        tmpNd = visited[bd.GetOther(info)];
+                    }
+                    else
+                    {
+                        tmpNd = new Node(bd.GetOther(info).Type, new PointF(baseNode.Location.X + offset.X, baseNode.Location.Y + offset.Y));
+                        Nodes.Add(tmpNd);
+                    }
                     Bond tmpbd = new Bond(baseNode, tmpNd, bd.Type);
                     Bonds.Add(tmpbd);
-                    DrawGraph(molecule, tmpbd, bd, tmpNd, bd.GetOther(info));
+                    if (!visited.Keys.Contains(bd.GetOther(info)))
+                    {
+                        DrawGraph(molecule, tmpbd, bd, tmpNd, bd.GetOther(info));
+                        visited.Add(bd.GetOther(info), tmpNd);
+                    }
                     availableDirs.RemoveAt(0);
                 }
             }
@@ -333,13 +371,14 @@ namespace VisualChem.Chem
 
             public Graph FromStructure(Structure.Molecule molecule)
             {
-                Structure.Node pivot = molecule.Nodes.FirstOrDefault(i => i.Type == Elements.Carbon);
+                Structure.Node pivot = molecule.Nodes.First();
                 if (pivot == null)
                 {
                     return this;
                 }
                 Node n = new Node(pivot.Type, new Point(0, 0));
                 Nodes.Add(n);
+                visited.Add(pivot, n);
                 DrawGraph(molecule, null, null, n, pivot);
                 return this;
             }

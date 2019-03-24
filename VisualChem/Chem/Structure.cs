@@ -124,7 +124,7 @@ namespace VisualChem.Chem
         }
         public enum FunctionalGps
         {
-            yl, oxy, hydroxy, carboxyl, bromo, chloro, fluoro, oxo
+            yl, oxy, hydroxy, carboxyl, bromo, chloro, fluoro, oxo, cyclo, phenyl
         }
         public enum Bonds
         {
@@ -338,6 +338,29 @@ namespace VisualChem.Chem
                 Node nodeBr = new Node(Elements.Chlorine);
                 Nodes.Add(nodeBr);
                 Bonds.Add(new Bond(carbon, nodeBr, BondType.Single, Orientation.None));
+            }
+
+            void Phenyl(Node carbon)
+            {
+                Node nodeC1 = new Node(Elements.Carbon);
+                Node nodeC2 = new Node(Elements.Carbon);
+                Node nodeC3 = new Node(Elements.Carbon);
+                Node nodeC4 = new Node(Elements.Carbon);
+                Node nodeC5 = new Node(Elements.Carbon);
+                Node nodeC6 = new Node(Elements.Carbon);
+                Nodes.Add(nodeC1);
+                Nodes.Add(nodeC2);
+                Nodes.Add(nodeC3);
+                Nodes.Add(nodeC4);
+                Nodes.Add(nodeC5);
+                Nodes.Add(nodeC6);
+                Bonds.Add(new Bond(carbon, nodeC1, BondType.Single, Orientation.None));
+                Bonds.Add(new Bond(nodeC1, nodeC2, BondType.Single, Orientation.None));
+                Bonds.Add(new Bond(nodeC2, nodeC3, BondType.Double, Orientation.None));
+                Bonds.Add(new Bond(nodeC3, nodeC4, BondType.Single, Orientation.None));
+                Bonds.Add(new Bond(nodeC4, nodeC5, BondType.Double, Orientation.None));
+                Bonds.Add(new Bond(nodeC5, nodeC6, BondType.Single, Orientation.None));
+                Bonds.Add(new Bond(nodeC6, nodeC1, BondType.Double, Orientation.None));
             }
 
             void Alkane(Node carbon, int length)
@@ -554,6 +577,7 @@ namespace VisualChem.Chem
                     {
                         Operators op;
                         EngPrefixes engPre;
+                        FunctionalGps fGp;
                         if (t.Type is Operators)
                         {
                             op = (Operators)t.Type;
@@ -575,8 +599,14 @@ namespace VisualChem.Chem
                             engPre = (EngPrefixes)t.Type;
                             engPreNum = (int)engPre;
                         }
-                        else
+                        else if (t.Type is FunctionalGps)
                         {
+                            fGp = (FunctionalGps)t.Type;
+                            if (fGp == FunctionalGps.cyclo)
+                            {
+                                if (parentChain.First() != parentChain.Last() && !GetOther(parentChain.First()).Select(b => b.GetOther(parentChain.First())).Contains(parentChain.Last()))
+                                    Bonds.Add(new Bond(parentChain.First(), parentChain.Last(), BondType.Single, Orientation.None));
+                            }
                             //TODO: implicit functional group location
                             ignoreHyphen = true;
                         }
@@ -636,6 +666,13 @@ namespace VisualChem.Chem
                                 foreach (int k in numbers)
                                 {
                                     Ketone(parentChain[k - 1]);
+                                }
+                            }
+                            else if (ftype == FunctionalGps.phenyl)
+                            {
+                                foreach (int k in numbers)
+                                {
+                                    Phenyl(parentChain[k - 1]);
                                 }
                             }
                             else if (ftype == FunctionalGps.chloro)
