@@ -354,7 +354,7 @@ namespace VisualChem.Chem
                 Nodes.Add(nodeC4);
                 Nodes.Add(nodeC5);
                 Nodes.Add(nodeC6);
-                Bonds.Add(new Bond(carbon, nodeC1, BondType.Single, Orientation.None));
+                Bonds.Add(new Bond(carbon, nodeC1, BondType.Single, Orientation.Vertical));
                 Bonds.Add(new Bond(nodeC1, nodeC2, BondType.Single, Orientation.None));
                 Bonds.Add(new Bond(nodeC2, nodeC3, BondType.Double, Orientation.None));
                 Bonds.Add(new Bond(nodeC3, nodeC4, BondType.Single, Orientation.None));
