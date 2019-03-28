@@ -167,6 +167,20 @@ namespace VisualChem.Chem
             public List<Token> TailTokens = new List<Token>();
         }
 
+        public class NameModifier
+        {
+            public int Locations;
+            public object Type;
+            public List<NameModifier> Modifiers = new List<NameModifier>();
+        }
+
+        public class Instructions
+        {
+            public List<NameModifier> FunctionalGps = new List<NameModifier>();
+            public object ParentChain;
+            public List<NameModifier> Tails = new List<NameModifier>();
+        }
+
         public class Molecule
         {
             public List<Node> Nodes = new List<Node>();
@@ -179,7 +193,7 @@ namespace VisualChem.Chem
 
             List<string> FindStringTokens(string name, List<string> refTokens)
             {
-                if (String.IsNullOrWhiteSpace(name))
+                if (string.IsNullOrWhiteSpace(name))
                 {
                     return new List<string>();
                 }
@@ -393,6 +407,63 @@ namespace VisualChem.Chem
                     Bonds.Add(new Bond(carbonChain[i], carbonChain[i + 1], BondType.Single, Orientation.Vertical));
                 }
                 Nodes.AddRange(carbonChain);
+            }
+
+            public Instructions GetModifiers(TokenizedExpression exp)
+            {
+                List<List<Token>> FunctionalGpTokenSet = new List<List<Token>>();
+                Token ParentChainToken = exp.ParentChainTokens[0];
+                List<List<Token>> TailTokenSet = new List<List<Token>>();
+
+                FunctionalGpTokenSet.Add(new List<Token>());
+                for (int i = 0; i < exp.FunctionalGpTokens.Count; i++)
+                {
+                    Token t = exp.FunctionalGpTokens[i];
+                    FunctionalGps fgp;
+                    if (t.Type is FunctionalGps)
+                    {
+                        fgp = (FunctionalGps)t.Type;
+                        FunctionalGpTokenSet.Last().Add(t);
+                        if (i != exp.FunctionalGpTokens.Count - 1)
+                        {
+                            if (exp.FunctionalGpTokens[i + 1].Type is FunctionalGps)
+                            {
+                                if (!CanModify((FunctionalGps)exp.FunctionalGpTokens[i + 1].Type))
+                                {
+                                    FunctionalGpTokenSet.Add(new List<Token>());
+                                }
+                            }
+                            else if (!(exp.FunctionalGpTokens[i + 1].Type is ChemPrefixes))
+                            {
+                                FunctionalGpTokenSet.Add(new List<Token>());
+                            }
+                        }
+                    }
+                    else if (FunctionalGpTokenSet.Last().Count != 0 || !(t.Type is Operators) || !(((Operators)t.Type) == Operators.hyphen))
+                    {
+                        FunctionalGpTokenSet.Last().Add(t);
+                    }
+                }
+
+                TailTokenSet.Add(new List<Token>());
+                for (int i = 0; i < exp.TailTokens.Count; i++)
+                {
+                    Token t = exp.TailTokens[i];
+                    if (t.Type is Bonds || t.Type is Suffixes)
+                    {
+                        TailTokenSet.Last().Add(t);
+                        if (i < exp.TailTokens.Count - 1)
+                            TailTokenSet.Add(new List<Token>());
+                    }
+                    else if (TailTokenSet.Last().Count != 0 || !(t.Type is Operators) || !(((Operators)t.Type) == Operators.hyphen))
+                    {
+                        TailTokenSet.Last().Add(t);
+                    }
+                }
+
+
+
+                return null;
             }
 
             public Molecule GetRawMolecule(TokenizedExpression exp)
@@ -734,6 +805,7 @@ namespace VisualChem.Chem
                 TokenizedExpression texp = Tokenize(exp);
                 GetRawMolecule(texp);
                 FixMolecule();
+                GetModifiers(texp);
             }
 
             public List<Bond> GetOther(Node thisNode)
@@ -806,6 +878,19 @@ namespace VisualChem.Chem
                     return 2;
                 default:
                     return 0;
+            }
+        }
+
+        public static bool CanModify(FunctionalGps t)
+        {
+            switch (t)
+            {
+                case FunctionalGps.oxy:
+                case FunctionalGps.yl:
+                case FunctionalGps.phenyl:
+                    return true;
+                default:
+                    return false;
             }
         }
     }
