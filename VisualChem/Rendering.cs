@@ -5,9 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Drawing;
 
-namespace VisualChem.Chem
+namespace VisualChem
 {
-    class Rendering
+    public class Rendering
     {
         public class Graph
         {
@@ -70,7 +70,7 @@ namespace VisualChem.Chem
                 }
             }
 
-            Dictionary<Structure.Node,Node> visited = new Dictionary<Structure.Node,Node>();
+            Dictionary<Structure.Node, Node> visited = new Dictionary<Structure.Node, Node>();
 
             void DrawGraph(Structure.Molecule molecule, Bond lastBond, Structure.Bond lastInfo, Node baseNode, Structure.Node info)
             {

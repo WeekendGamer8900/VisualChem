@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VisualChem.Chem
+namespace VisualChem
 {
     using System.ComponentModel;
     using System.Text.RegularExpressions;
     using static Helper;
-    class Structure
+    public class Structure
     {
         static Dictionary<string, Operators> dictOperators =
             Enum.GetValues(typeof(Operators)).Cast<Operators>().ToDictionary((op) => op.ToDString());

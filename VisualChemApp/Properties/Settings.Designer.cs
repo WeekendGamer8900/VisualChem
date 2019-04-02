@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace VisualChem.Properties
+namespace VisualChemApp.Properties
 {
 
 

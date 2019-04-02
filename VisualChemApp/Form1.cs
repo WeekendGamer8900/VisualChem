@@ -5,12 +5,11 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using VisualChem.Chem;
+using VisualChem;
 
-namespace VisualChem
+namespace VisualChemApp
 {
     public partial class Form1 : Form
     {
@@ -28,10 +27,6 @@ namespace VisualChem
         Structure.Molecule thisMol = new Structure.Molecule();
         Rendering.Graph graph = new Rendering.Graph();
         float scale = 1f;
-
-        private void textBox1_TextChanged(object sender, EventArgs e)
-        {
-        }
 
         private void txtName_KeyUp(object sender, KeyEventArgs e)
         {
@@ -83,7 +78,7 @@ namespace VisualChem
 
         private void Form1_KeyUp(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.S)
+            if (e.KeyCode == Keys.S && !txtName.Focused)
             {
                 graph.Shake();
             }

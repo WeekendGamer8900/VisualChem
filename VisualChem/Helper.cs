@@ -8,7 +8,7 @@ using System.Drawing;
 
 namespace VisualChem
 {
-    static class Helper
+    public static class Helper
     {
         static Random rng = new Random();
         public static bool isNumeric(char c)
@@ -19,16 +19,16 @@ namespace VisualChem
         {
             return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
         }
-        public static bool LookForward(string s,string t,int loc)
+        public static bool LookForward(string s, string t, int loc)
         {
             return s.Substring(loc, t.Length) == t;
         }
-        public static string GetNumForward(string s,ref int loc)
+        public static string GetNumForward(string s, ref int loc)
         {
             string ret = s[loc].ToString();
             while (loc + 1 < s.Length && isNumeric(s[loc + 1]))
             {
-                ret += s[loc+1];
+                ret += s[loc + 1];
                 loc++;
             }
             return ret;
@@ -61,7 +61,7 @@ namespace VisualChem
             }
             return new PointF(p.X / p.Magnitude(), p.Y / p.Magnitude());
         }
-        public static PointF Scale(this PointF p,float x)
+        public static PointF Scale(this PointF p, float x)
         {
             return new PointF(p.X * x, p.Y * x);
         }
@@ -73,11 +73,11 @@ namespace VisualChem
         {
             return new PointF(-p.X, -p.Y);
         }
-        public static PointF Subtract(this PointF p,PointF q)
+        public static PointF Subtract(this PointF p, PointF q)
         {
             return p.Add(q.Invert());
         }
-        public static float Distance(this PointF p,PointF q)
+        public static float Distance(this PointF p, PointF q)
         {
             return p.Subtract(q).Magnitude();
         }
@@ -101,7 +101,7 @@ namespace VisualChem
                 list[n] = value;
             }
         }
-        public static float Rnd(float low,float high)
+        public static float Rnd(float low, float high)
         {
             return (float)(rng.NextDouble() * (high - low) + low);
         }
