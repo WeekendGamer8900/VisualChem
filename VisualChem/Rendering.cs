@@ -16,6 +16,7 @@ namespace VisualChem
             public bool simpleMode = false;
             public bool randomStruct = false;
             public bool fixCamera = false;
+            public bool scaleFont = false;
             public float RefScale = 1f;
             public PointF Cursor;
             public Node Selected;
@@ -259,7 +260,7 @@ namespace VisualChem
                     {
                         if (found || Selected != null && Selected.Locked)
                         {
-                            g.DrawString(n.Type.ToDString(), font, Brushes.Black, n.Location.X * 30 * scale, n.Location.Y * 30 * scale, new StringFormat() { LineAlignment = StringAlignment.Center, Alignment = StringAlignment.Center });
+                            g.DrawString(n.Type.ToDString(), new Font(font.FontFamily, font.Size * (scaleFont ? (float)Math.Pow(scale, 0.5d) : 1f)), Brushes.Black, n.Location.X * 30 * scale, n.Location.Y * 30 * scale, new StringFormat() { LineAlignment = StringAlignment.Center, Alignment = StringAlignment.Center });
                         }
                         else if (Cursor.Distance(n.Location.Scale(30f * scale).Add(new PointF(width / 2 + offsetX, height / 2 + offsetY)).Subtract(origin)) < 10f)
                         {
@@ -267,7 +268,7 @@ namespace VisualChem
                             Selected = n;
                         }
                     }
-                    g.DrawString(n.Type.ToDString(), font, n == Selected ? Brushes.Silver : Brushes.Black, n.Location.X * 30 * scale, n.Location.Y * 30 * scale, new StringFormat() { LineAlignment = StringAlignment.Center, Alignment = StringAlignment.Center });
+                    g.DrawString(n.Type.ToDString(), new Font(font.FontFamily,font.Size * (scaleFont?(float)Math.Pow(scale,0.5d):1f)), n == Selected ? Brushes.Silver : Brushes.Black, n.Location.X * 30 * scale, n.Location.Y * 30 * scale, new StringFormat() { LineAlignment = StringAlignment.Center, Alignment = StringAlignment.Center });
                 }
                 if ((Selected == null || !Selected.Locked) && !found) Selected = null;
                 foreach (Bond b in Bonds)
