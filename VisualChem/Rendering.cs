@@ -21,6 +21,7 @@ namespace VisualChem
             public PointF Cursor;
             public Node Selected;
             public PointF origin = new PointF(0, 0);
+            public long TimeElapsed = 0;
 
             int PointToNum(float dx, float dy)
             {
@@ -274,7 +275,7 @@ namespace VisualChem
                 foreach (Bond b in Bonds)
                 {
                     PointF Dir21 = b.Node2.Location.Subtract(b.Node1.Location).Normalize();
-                    PointF gap = Dir21.Scale(10);
+                    PointF gap = Dir21.Scale(10 * (scaleFont?scale:1));
                     if (simpleMode && b.Node1.Type != Elements.Hydrogen && b.Node2.Type != Elements.Hydrogen || !simpleMode)
                     {
                         if (b.Type == BondType.Single || b.Type == BondType.Triple)
@@ -366,6 +367,8 @@ namespace VisualChem
                         Nodes[i].Location = Nodes[i].Location.Add(Nodes[i].Velocity);
                     Nodes[i].Velocity = Nodes[i].Velocity.Scale(0.9f);
                 }
+
+                TimeElapsed++;
 
                 return this;
             }

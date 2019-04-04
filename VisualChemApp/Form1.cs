@@ -37,6 +37,7 @@ namespace VisualChemApp
                     string tmp = txtName.Text.ToLower();
                     thisMol = new Structure.Molecule();
                     graph = new Rendering.Graph();
+                    graph.scaleFont = true;
                     /*
                     Structure.StringExpression l = thisMol.Lexer(tmp);
                     if (l.FunctionalGpTokens != null && l.ParentChainTokens != null && l.TailTokens != null)
@@ -68,7 +69,7 @@ namespace VisualChemApp
         {
             imgOut.Image = graph.GetImage(imgOut.Width, imgOut.Height, Font, 0, 0, scale);
             imgOut.Refresh();
-            Text = "VisualChem - " + "(" + graph.origin.X.ToString("F2") + ", " + graph.origin.Y.ToString("F2") + ") " + (1f / graph.RefScale).ToString("F2");
+            Text = "VisualChem - " + "(" + graph.origin.X.ToString("F2") + ", " + graph.origin.Y.ToString("F2") + ") " + graph.TimeElapsed.ToString() + " - " + (1f / graph.RefScale).ToString("F2");
         }
 
         private void txtName_MouseMove(object sender, MouseEventArgs e)
