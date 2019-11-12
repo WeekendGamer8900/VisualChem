@@ -904,7 +904,7 @@ namespace VisualChem
                 TokenizedExpression texp = Tokenize(exp);
                 GetRawMolecule(texp);
                 FixMolecule();
-                GetModifiers(texp);
+                Instructions ins = GetModifiers(texp);
             }
 
             public List<Bond> GetOther(Node thisNode)
